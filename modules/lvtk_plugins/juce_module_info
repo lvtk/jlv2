@@ -1,0 +1,25 @@
+{
+  "id":             "lvtk_plugins",
+  "name":           "LV2 Plugin/UI hosting for JUCE",
+  "version":        "0.0.1",
+  "description":    "LVTK classes for hosting LV2 plugins and UIs",
+  "website":        "http://lvtoolkit.org",
+  "license":        "GPL",
+
+  "dependencies":   [ { "id": "juce_audio_processors", "version": "2.1.8" },
+                      { "id": "lvtk_core", "version": "matching" } ], 
+
+  "include":        "lvtk_plugins.h",
+
+  "compile":        [ { "file": "lvtk_plugins.cpp", "target": "! xcode" },
+                      { "file": "lvtk_plugins.mm",  "target": "xcode" } ],
+
+  "browse":         [ "features/*",
+                      "gui/*",
+		              "host/*" ],
+
+  "OSXFrameworks":  "",
+  "iOSFrameworks":  "",
+  "LinuxLibs":      "",
+  "mingwLibs":      ""
+}
