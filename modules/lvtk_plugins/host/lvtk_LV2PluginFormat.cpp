@@ -34,37 +34,6 @@
 #endif
 
 
-class LV2Parameter :  public Parameter
-{
-public:
-    LV2Parameter (const LilvPlugin* pg, const LilvPort* pt)
-        : Parameter (),
-          portIndex (lilv_port_get_index (pg, pt)),
-          plugin (pg),
-          port (pt)
-
-    {
-        LilvNode* n = lilv_port_get_name (plugin, port);
-        const LilvNode* s = lilv_port_get_symbol (plugin, port);
-
-        setName (lilv_node_as_string (n));
-        setSymbol (lilv_node_as_string (s));
-
-        lilv_node_free (n);
-    }
-
-    uint32 getPortIndex() const { return portIndex; }
-    void setPortIndex (uint32 index) { portIndex = index; }
-
-private:
-
-    uint32 portIndex;
-    const LilvPlugin* plugin;
-    const LilvPort*   port;
-
-};
-
-
 //==============================================================================
 class LV2PluginInstance     : public LVTK_JUCE_PLUGIN_INSTANCE_CLASS
 {
@@ -96,7 +65,15 @@ public:
                 {
                     case PortType::Audio: audioIns.add (p); break;
                     case PortType::Atom: atomIns.add (p); break;
-                    case PortType::Control: ctlIns.add(p); params.add (new LV2Parameter (plugin, port)); break;
+                    case PortType::Control:
+                    {
+                        LV2Parameter* param = new LV2Parameter (plugin, port);
+                        float min = 0.0f, max = 1.0f, def = 0.0f;
+                        module->getPortRange (p, min, max, def);
+                        param->set (min, max, def);
+                        ctlIns.add (p); params.add (param);
+                        break;
+                    }
                     case PortType::CV: cvIns.add (p); break;
                     case PortType::Unknown:
                     default:
@@ -117,20 +94,6 @@ public:
                 }
             }
         }
-
-       #if JUCE_DEBUG
-        for (int i = 0; i < audioIns.size(); ++i) {
-            std::clog << "audio in: " << i << " to port " << audioIns.getUnchecked(i) << std::endl;
-        }
-
-        for (int i = 0; i < audioOuts.size(); ++i) {
-            std::clog << "audio out: " << i << " to port " << audioOuts.getUnchecked(i) << std::endl;
-        }
-
-        for (int i = 0; i < ctlIns.size(); ++i) {
-            std::clog << "ctl in: " << i << " to port " << ctlIns.getUnchecked(i) << std::endl;
-        }
-       #endif
 
         setPlayConfigDetails (audioIns.size(), audioOuts.size(), 44100.0, 1024);
     }
@@ -233,8 +196,19 @@ public:
             return;
         }
 
+        if (AudioPlayHead* const playHead = getPlayHead ())
+        {
+            AudioPlayHead::CurrentPositionInfo position;
+            playHead->getCurrentPosition (position);
+            
+            if (position.isLooping)
+            { }
+            else
+            { }
+        }
+        
         for (int32 i = audioIns.size(); --i >= 0;) {
-            module->connectPort (audioIns.getUnchecked(i), audio.getSampleData (i));
+            module->connectPort (audioIns.getUnchecked (i), audio.getSampleData (i));
         }
 
         for (int32 i = audioOuts.size(); --i >= 0;) {
@@ -376,7 +350,11 @@ public:
     void setParameter (int index, float newValue)
     {
         if (isPositiveAndBelow (index, params.size()))
-            params.getUnchecked(index)->setNormal (newValue);
+        {
+            LV2Parameter* const param = params.getUnchecked (index);
+            param->setNormal (newValue);
+            module->setControlValue (param->getPortIndex(), param->value());
+        }
     }
 
     const String getParameterName (int index)
@@ -428,7 +406,7 @@ private:
 
     AudioSampleBuffer tempBuffer;
     ScopedPointer<LV2Module> module;
-    OwnedArray<Parameter> params;
+    OwnedArray<LV2Parameter> params;
 
     uint32 numPorts;
     uint32 midiPort;
@@ -497,6 +475,7 @@ LV2PluginFormat::findAllTypesForFile (OwnedArray <PluginDescription>& results,
     desc->pluginFormatName = String ("LV2");
     desc->uid = 0;
 
+    
     try
     {
         ScopedPointer<AudioPluginInstance> instance (createInstanceFromDescription (*desc.get(), 44100, 1024));
@@ -521,6 +500,7 @@ LV2PluginFormat::createInstanceFromDescription (const PluginDescription& desc, d
     if (LV2Module* module = priv->createModule (desc.fileOrIdentifier))
     {
         module->instantiate (sampleRate, priv->features);
+        module->activate();
         return new LV2PluginInstance (*priv->world, module);
     }
 
@@ -532,11 +512,12 @@ bool
 LV2PluginFormat::fileMightContainThisPluginType (const String& fileOrIdentifier)
 {
     bool maybe = fileOrIdentifier.contains ("http:") ||
-                 fileOrIdentifier.contains ("urn.");
+                 fileOrIdentifier.contains ("urn:");
 
-    if (! maybe)
+    if (! maybe && File::isAbsolutePath (fileOrIdentifier))
     {
-        // TODO: check if its an .lv2 bundle
+        const File file (fileOrIdentifier);
+        maybe = file.getChildFile("manifest.ttl").existsAsFile();
     }
 
     return maybe;

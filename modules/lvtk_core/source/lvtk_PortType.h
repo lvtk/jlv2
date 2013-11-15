@@ -90,6 +90,20 @@ public:
         return res;
     }
 
+    class ChannelMapping {
+    public:
+        
+        ChannelMapping()
+        {
+            ports.ensureStorageAllocated (PortType::Unknown);
+        }
+        
+    private:
+        
+        Array<Array<int32> > ports;
+    
+    };
+    
 private:
 
     /** @internal */
@@ -101,7 +115,7 @@ private:
             String (LV2_CORE__AudioPort),
             String (LV2_CORE__CVPort),
             String (LV2_ATOM__AtomPort),
-            String ("http://element-project.org/ns#null")
+            String ("http://lvtoolkit.org/ns#null")
         };
         return uris [id];
     }

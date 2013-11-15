@@ -160,7 +160,8 @@ LV2Module::LV2Module (LV2World& world_, const LilvPlugin* plugin_)
      hub (nullptr),
      workResponses (nullptr)
 {
-   priv = new Private (*this);
+    priv = new Private (*this);
+    init();
 }
 
 LV2Module::~LV2Module ()
@@ -173,26 +174,28 @@ void
 LV2Module::activatePorts()
 {
    jassert (instance != nullptr);
-
-   priv->mins.allocate (numPorts, true);
-   priv->maxes.allocate (numPorts, true);
-   priv->defaults.allocate (numPorts, true);
-   priv->values.allocate (numPorts, true);
-
-   plugin.get_port_ranges_float (priv->mins, priv->maxes, priv->defaults);
-
-   for (uint32 i = 0; i < numPorts; ++i)
-       priv->values[i] = priv->defaults[i];
-
    for (int32 p = 0; p < numPorts; ++p)
    {
+       //const bool isInput  = isPortInput (p);
        const PortType type = getPortType (p);
-
-       if (type == PortType::Control)
+       
+       if (type == PortType::Atom)
+       {
+           
+       }
+       else if (type == PortType::Audio)
+       {
+           
+       }
+       else if (type == PortType::Control)
        {
            // normally this would ONLY be done during 'run'. However,
            // control ports are only connected once, here, during activation
            connectPort (p, priv->values.getData() + p);
+       }
+       else if (type == PortType::CV)
+       {
+           
        }
    }
 }
@@ -200,7 +203,14 @@ LV2Module::activatePorts()
 void
 LV2Module::init()
 {
-
+    // create and set default port values
+    priv->mins.allocate (numPorts, true);
+    priv->maxes.allocate (numPorts, true);
+    priv->defaults.allocate (numPorts, true);
+    priv->values.allocate (numPorts, true);
+    plugin.get_port_ranges_float (priv->mins, priv->maxes, priv->defaults);
+    for (uint32 i = 0; i < numPorts; ++i)
+        priv->values [i] = priv->defaults [i];
 }
 
 Result
@@ -272,7 +282,8 @@ LV2Module::freeInstance()
 {
    if (instance != nullptr)
    {
-       lilv_instance_free (*instance);
+       deactivate();
+       lilv_instance_free (instance->me);
        instance = nullptr;
    }
 }
@@ -341,14 +352,20 @@ LV2Module::getClassLabel() const
    return String::empty;
 }
 
-LV2_Handle LV2Module::getHandle() { return instance != nullptr ? instance->get_handle() : nullptr; }
+
+
+LV2_Handle
+LV2Module::getHandle()
+{
+    return instance != nullptr ? instance->get_handle() : nullptr;
+}
 
 String
 LV2Module::getName() const
 {
    if (LilvNode* node = lilv_plugin_get_name (plugin))
    {
-       String name = lilv_node_as_string (node);
+       String name = CharPointer_UTF8 (lilv_node_as_string (node));
        lilv_node_free (node);
        return name;
    }
@@ -357,7 +374,7 @@ LV2Module::getName() const
 }
 
 uint32
-LV2Module::getNumPorts() const { return lilv_plugin_get_num_ports (plugin); }
+LV2Module::getNumPorts() const { return numPorts; }
 
 uint32
 LV2Module::getNumPorts (PortType type, bool isInput) const
@@ -411,6 +428,17 @@ LV2Module::getNotifyPort() const
    return Port::invalidIndex;
 #endif
    return 0;
+}
+
+void
+LV2Module::getPortRange (uint32 port, float& min, float& max, float& def) const
+{
+    if (port >= numPorts)
+        return;
+    
+    min = priv->mins [port];
+    max = priv->maxes [port];
+    def = priv->defaults [port];
 }
 
 PortType
@@ -475,6 +503,21 @@ LV2Module::run (uint32 nframes)
    instance->run (nframes);
 
    if (haveWorker && worker->end_run != nullptr)
-       worker->end_run (getHandle());
+       worker->end_run (instance->get_handle());
+}
 
+void
+LV2Module::setControlValue (uint32 port, float value)
+{
+    // XXX not thraed safe, do this with a writeToPort method + a ringbuffer
+    
+    if (port >= numPorts) {
+        Logger::writeToLog ("Port could not set value: " + String(port) + String(" ") + String (value));
+        return;
+    }
+    
+    float* buf = priv->values.getData();
+    buf [port] = value;
+    
+    Logger::writeToLog ("Port CTL Value Set: " + String (value));
 }

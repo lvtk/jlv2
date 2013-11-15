@@ -88,23 +88,24 @@ public:
 
     String getAuthorName() const;
     String getClassLabel() const;
-    String getName() const;
-    String getURI() const;
-
-    inline bool hasEditor() const { return false; /* XXX */ }
-
     uint32 getMidiPort() const;
+    String getName() const;
     uint32 getNotifyPort() const;
     LV2_Handle getHandle();
     const LilvPlugin* getPlugin() const;
     const LilvPort* getPort (uint32 index) const;
+    void getPortRange (uint32 port, float& min, float& max, float& def) const;
     PortType getPortType (uint32 index) const;
+    String getURI() const;
 
-    void setSampleRate (double newSampleRate);
-
+    inline bool hasEditor() const { return false; /* XXX */ }
+    
     bool isLoaded() const;
     bool isPortInput (uint32 port) const;
     bool isPortOutput (uint32 port) const;
+    
+    void setControlValue (uint32 port, float value);
+    void setSampleRate (double newSampleRate);
 
     void run (uint32 nframes);
     void connectPort (uint32 port, void* data);
