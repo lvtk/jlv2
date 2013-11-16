@@ -31,11 +31,11 @@ SOURCE PACKAGES KNOWN TO WORK WELL
 The following packages are listed in in dependent order.
 
 - http://lv2plug.in/spec/lv2-1.6.0.tar.bz2 - ISC
-- http://download.drobilla.net/serd-0.18.2.tar.bz2
-- http://download.drobilla.net/sord-0.12.0.tar.bz2
-- http://download.drobilla.net/sratom-0.4.2.tar.bz2
-- http://download.drobilla.net/lilv-0.16.0.tar.bz2
-- http://download.drobilla.net/suil-0.6.16.tar.bz2
+- http://download.drobilla.net/serd-0.18.2.tar.bz2 - ISC
+- http://download.drobilla.net/sord-0.12.0.tar.bz2 - ISC
+- http://download.drobilla.net/sratom-0.4.2.tar.bz2 - ISC
+- http://download.drobilla.net/lilv-0.16.0.tar.bz2 - ISC
+- http://download.drobilla.net/suil-0.6.16.tar.bz2 - ISC
 
 The easy way to install Lilv/Suil is to checkout Drobilla's SVN repository
 and build everything in one shot.
