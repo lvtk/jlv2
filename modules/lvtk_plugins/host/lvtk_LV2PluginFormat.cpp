@@ -324,18 +324,15 @@ public:
     //==============================================================================
     const String getInputChannelName (int index) const
     {
-        String name = String::empty;
-        
+        String name = String ("Audio In ") + String (index + 1);
         if (! isPositiveAndBelow (index, audioIns.size()))
             return name;
         
         if (const LilvPort* port = module->getPort (audioIns.getUnchecked (index)))
         {
-            if (LilvNode* node = lilv_port_get_name (module->getPlugin(), port))
-            {
-                name = CharPointer_UTF8 (lilv_node_as_string (node));
-                lilv_node_free (node);
-            }
+            LilvNode* node = lilv_port_get_name (module->getPlugin(), port);
+            name = CharPointer_UTF8 (lilv_node_as_string (node));
+            lilv_node_free (node);
         }
         
         return name;
@@ -345,8 +342,7 @@ public:
 
     const String getOutputChannelName (int index) const
     {
-        String name = String::empty;
-        
+        String name = String ("Audio Out ") + String (index + 1);
         if (! isPositiveAndBelow (index, audioOuts.size()))
             return name;
         
@@ -416,16 +412,16 @@ public:
     
 
     float
-    getParameterDefaultValue (int parameterIndex)
+    getParameterDefaultValue (int index)
     {
-        if (LV2Parameter* const param = params [parameterIndex])
+        if (LV2Parameter* const param = params [index])
         {
             float min, max, def;
             module->getPortRange (param->getPortIndex(), min, max, def);
             return def;
         }
         
-        return 0.0f;
+        return AudioProcessor::getParameterDefaultValue (index);
     }
 
     String getParameterLabel (int index) const
@@ -537,7 +533,7 @@ LV2PluginFormat::findAllTypesForFile (OwnedArray <PluginDescription>& results,
     
     try
     {
-        ScopedPointer<AudioPluginInstance> instance (createInstanceFromDescription (*desc.get(), 44100, 1024));
+        ScopedPointer<AudioPluginInstance> instance (createInstanceFromDescription (*desc.get(), 44100.0, 1024));
         if (LV2PluginInstance* const p = dynamic_cast <LV2PluginInstance*> (instance.get()))
         {
             p->fillInPluginDescription (*desc.get());

@@ -208,7 +208,7 @@ LV2Module::init()
     priv->maxes.allocate (numPorts, true);
     priv->defaults.allocate (numPorts, true);
     priv->values.allocate (numPorts, true);
-    plugin.get_port_ranges_float (priv->mins, priv->maxes, priv->defaults);
+    lilv_plugin_get_port_ranges_float (plugin, priv->mins, priv->maxes, priv->defaults);
     for (uint32 i = 0; i < numPorts; ++i)
         priv->values [i] = priv->defaults [i];
 }
