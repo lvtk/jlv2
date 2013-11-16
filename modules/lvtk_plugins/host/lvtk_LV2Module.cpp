@@ -352,12 +352,16 @@ LV2Module::getClassLabel() const
    return String::empty;
 }
 
-
+const void*
+LV2Module::getExtensionData (const String& uri) const
+{
+    return instance ? instance->get_extension_data (uri.toUTF8()) : nullptr;
+}
 
 LV2_Handle
 LV2Module::getHandle()
 {
-    return instance != nullptr ? instance->get_handle() : nullptr;
+    return instance ? instance->get_handle() : nullptr;
 }
 
 String
