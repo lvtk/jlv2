@@ -324,22 +324,59 @@ public:
     //==============================================================================
     const String getInputChannelName (int index) const
     {
-        return String::empty;
+        String name = String::empty;
+        
+        if (! isPositiveAndBelow (index, audioIns.size()))
+            return name;
+        
+        if (const LilvPort* port = module->getPort (audioIns.getUnchecked (index)))
+        {
+            if (LilvNode* node = lilv_port_get_name (module->getPlugin(), port))
+            {
+                name = CharPointer_UTF8 (lilv_node_as_string (node));
+                lilv_node_free (node);
+            }
+        }
+        
+        return name;
     }
 
     bool isInputChannelStereoPair (int index) const { return false; }
 
     const String getOutputChannelName (int index) const
     {
-        return String::empty;
+        String name = String::empty;
+        
+        if (! isPositiveAndBelow (index, audioOuts.size()))
+            return name;
+        
+        if (const LilvPort* port = module->getPort (audioOuts.getUnchecked (index)))
+        {
+            LilvNode* node = lilv_port_get_name (module->getPlugin(), port);
+            name = CharPointer_UTF8 (lilv_node_as_string (node));
+            lilv_node_free (node);
+        }
+        
+        return name;
     }
 
     bool isOutputChannelStereoPair (int index) const { return false; }
 
+    
     //==============================================================================
     int getNumParameters() { return params.size(); }
 
-    float getParameter (int index)
+    const String
+    getParameterName (int index)
+    {
+        if (isPositiveAndBelow (index, params.size()))
+            return params.getUnchecked(index)->getName();
+        return String::empty;
+    }
+
+    
+    float
+    getParameter (int index)
     {
         if (isPositiveAndBelow (index, params.size()))
             return static_cast<float> (params.getUnchecked(index)->normal());
@@ -347,7 +384,19 @@ public:
         return 0.0f;
     }
 
-    void setParameter (int index, float newValue)
+    const String
+    getParameterText (int index)
+    {
+        if (! isPositiveAndBelow (index, params.size()))
+            return String (getParameter (index));
+        
+        LV2Parameter* const param = params.getUnchecked (index);
+        return String (static_cast<float> (param->value()));
+    }
+    
+    
+    void
+    setParameter (int index, float newValue)
     {
         if (isPositiveAndBelow (index, params.size()))
         {
@@ -357,16 +406,26 @@ public:
         }
     }
 
-    const String getParameterName (int index)
-    {
-        if (isPositiveAndBelow (index, params.size()))
-            return params.getUnchecked(index)->getName();
-        return String::empty;
-    }
 
-    const String getParameterText (int index)
+    int getParameterNumSteps (int index)
     {
-        return String::empty;
+        if (isPositiveAndBelow(index, params.size()))
+            return params.getUnchecked(index)->getNumSteps();
+        return AudioProcessor::getParameterNumSteps (index);
+    }
+    
+
+    float
+    getParameterDefaultValue (int parameterIndex)
+    {
+        if (LV2Parameter* const param = params [parameterIndex])
+        {
+            float min, max, def;
+            module->getPortRange (param->getPortIndex(), min, max, def);
+            return def;
+        }
+        
+        return 0.0f;
     }
 
     String getParameterLabel (int index) const
@@ -512,6 +571,7 @@ bool
 LV2PluginFormat::fileMightContainThisPluginType (const String& fileOrIdentifier)
 {
     bool maybe = fileOrIdentifier.contains ("http:") ||
+                 fileOrIdentifier.contains ("https:") ||
                  fileOrIdentifier.contains ("urn:");
 
     if (! maybe && File::isAbsolutePath (fileOrIdentifier))

@@ -22,9 +22,8 @@ class LV2Parameter :  public Parameter
 public:
     LV2Parameter (const LilvPlugin* pg, const LilvPort* pt)
         : Parameter (),
-    portIndex (lilv_port_get_index (pg, pt)),
-    plugin (pg),
-    port (pt)
+          portIndex (lilv_port_get_index (pg, pt)),
+          plugin (pg), port (pt)
     {
         LilvNode* n = lilv_port_get_name (plugin, port);
         const LilvNode* s = lilv_port_get_symbol (plugin, port);
@@ -32,16 +31,17 @@ public:
         setSymbol (lilv_node_as_string (s));
         lilv_node_free (n);
         
-        
         LilvScalePoints* points = lilv_port_get_scale_points (plugin, port);
         LILV_FOREACH (scale_points, iter, points)
         {
             const LilvScalePoint* point = lilv_scale_points_get (points, iter);
-            Logger::writeToLog ("scale: " + String (lilv_node_as_float (lilv_scale_point_get_value (point))));
+            scaleVals.add (lilv_node_as_float (lilv_scale_point_get_value (point)));
+            scaleNames.add (CharPointer_UTF8 (lilv_node_as_string (lilv_scale_point_get_label (point))));
         }
         lilv_scale_points_free (points);
     }
     
+    int getNumSteps() const { return scaleVals.size(); }
     uint32 getPortIndex() const { return portIndex; }
     void setPortIndex (uint32 index) { portIndex = index; }
     
@@ -50,6 +50,7 @@ private:
     uint32 portIndex;
     const LilvPlugin* plugin;
     const LilvPort*   port;
-    
+    Array<float>      scaleVals;
+    StringArray       scaleNames;
 };
 
