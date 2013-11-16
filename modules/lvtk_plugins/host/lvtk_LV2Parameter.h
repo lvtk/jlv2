@@ -17,6 +17,7 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/** An LV2 parameter, e.g. a Control input/output */
 class LV2Parameter :  public Parameter
 {
 public:

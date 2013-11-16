@@ -70,7 +70,7 @@ public:
                         LV2Parameter* param = new LV2Parameter (plugin, port);
                         float min = 0.0f, max = 1.0f, def = 0.0f;
                         module->getPortRange (p, min, max, def);
-                        param->set (min, max, def);
+                        param->setMinMaxValue (min, max, def);
                         ctlIns.add (p); params.add (param);
                         break;
                     }
@@ -375,7 +375,7 @@ public:
     getParameter (int index)
     {
         if (isPositiveAndBelow (index, params.size()))
-            return static_cast<float> (params.getUnchecked(index)->normal());
+            return static_cast<float> (params.getUnchecked(index)->getNormalValue());
 
         return 0.0f;
     }
@@ -387,7 +387,7 @@ public:
             return String (getParameter (index));
         
         LV2Parameter* const param = params.getUnchecked (index);
-        return String (static_cast<float> (param->value()));
+        return String (static_cast<float> (param->getValue()));
     }
     
     
@@ -397,8 +397,8 @@ public:
         if (isPositiveAndBelow (index, params.size()))
         {
             LV2Parameter* const param = params.getUnchecked (index);
-            param->setNormal (newValue);
-            module->setControlValue (param->getPortIndex(), param->value());
+            param->setNormalValue (newValue);
+            module->setControlValue (param->getPortIndex(), param->getValue());
         }
     }
 
