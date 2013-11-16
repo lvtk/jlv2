@@ -25,6 +25,13 @@
  #endif
 #endif
 
+/** Config: LVTK_USE_CXX11
+    Set this if to enable C++ 11 language features.  The default is disabled.
+ */
+#ifndef LVTK_USE_CXX11
+ #define LVTK_USE_CXX11 0
+#endif
+
 #include <functional>
 #include <map>
 

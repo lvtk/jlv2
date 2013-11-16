@@ -20,10 +20,14 @@
 #ifndef LVTK_JUCE_SYMMAP_H
 #define LVTK_JUCE_SYMMAP_H
 
+
+#if LVTK_ENABLE_CXX11
 /** A function type for mapping uris */
 typedef std::function<LV2_URID(const char*)> URIMapFunction;
 /** A function type for unmapping urids */
 typedef std::function<const char*(LV2_URID)> URIUnmapFunction;
+#endif
+
 
 /** Maintains a map of Strings/Symbols to integers
     This class also implements LV2 URID Map/Unmap features and is fully

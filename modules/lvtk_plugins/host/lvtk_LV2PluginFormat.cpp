@@ -60,8 +60,7 @@ public:
             const bool input = module->isPortInput (p);
             const PortType type = module->getPortType (p);
  
-            PortType::ChannelMapping& mapping = input ? inputs : outputs;
-            mapping.addPort (type, p);
+            channels.addPort (type, p, input);
             
             if (input)
             {
@@ -82,8 +81,8 @@ public:
             }
         }
 
-        setPlayConfigDetails (inputs.getNumChannels (PortType::Audio),
-                              outputs.getNumChannels (PortType::Audio), 44100.0, 1024);
+        setPlayConfigDetails (channels.getNumAudioInputs(),
+                              channels.getNumAudioOutputs(), 44100.0, 1024);
     }
 
 
@@ -93,11 +92,11 @@ public:
     }
 
     //=========================================================================
-    uint32 getNumPorts(){ return module->getNumPorts(); }
-    uint32 getNumPorts (PortType type, bool isInput) { return module->getNumPorts (type, isInput); }
-    PortType getPortType (uint32 port) { return module->getPortType (port); }
-    bool isPortInput (uint32 port)     { return module->isPortInput (port); }
-    bool isPortOutput (uint32 port)    { return module->isPortOutput (port); }
+    uint32 getNumPorts() const { return module->getNumPorts(); }
+    uint32 getNumPorts (PortType type, bool isInput) const { return module->getNumPorts (type, isInput); }
+    PortType getPortType (uint32 port) const { return module->getPortType (port); }
+    bool isPortInput (uint32 port)     const { return module->isPortInput (port); }
+    bool isPortOutput (uint32 port)    const { return module->isPortOutput (port); }
 
     //=========================================================================
     void fillInPluginDescription (PluginDescription& desc) const
@@ -152,8 +151,7 @@ public:
     //==============================================================================
     void prepareToPlay (double sampleRate, int blockSize)
     {
-        setPlayConfigDetails (inputs.getNumChannels (PortType::Audio),
-                              outputs.getNumChannels (PortType::Audio),
+        setPlayConfigDetails (channels.getNumAudioInputs(), channels.getNumAudioOutputs(),
                               sampleRate, blockSize);
         initialise();
 
@@ -198,10 +196,10 @@ public:
         }
         
         for (int32 i = getNumInputChannels(); --i >= 0;)
-            module->connectPort (inputs.getAudioPort (i), audio.getSampleData (i));
+            module->connectPort (channels.getAudioOutputPort (i), audio.getSampleData (i));
 
         for (int32 i = getNumOutputChannels(); --i >= 0;)
-            module->connectPort (outputs.getAudioPort (i), tempBuffer.getSampleData (i));
+            module->connectPort (channels.getAudioOutputPort (i), tempBuffer.getSampleData (i));
 
         module->run ((uint32) numSamples);
 
@@ -213,9 +211,13 @@ public:
     bool hasEditor() const { return false; }
     AudioProcessorEditor* createEditor() { return nullptr; }
 
+    
     //==============================================================================
-    const String getInputChannelName (int index) const
+    const String
+    getInputChannelName (int index) const
     {
+        const ChannelMapping& inputs (channels.getInputs());
+        
         String name = String ("Audio In ") + String (index + 1);
         if (! isPositiveAndBelow (index, inputs.getNumChannels (PortType::Audio)))
             return name;
@@ -236,10 +238,10 @@ public:
     getOutputChannelName (int index) const
     {
         String name = String ("Audio Out ") + String (index + 1);
-        if (! isPositiveAndBelow (index, outputs.getNumChannels (PortType::Audio)))
+        if (! isPositiveAndBelow (index, channels.getNumAudioOutputs()))
             return name;
         
-        if (const LilvPort* port = module->getPort (outputs.getAudioPort (index)))
+        if (const LilvPort* port = module->getPort (channels.getAudioPort (index, false)))
         {
             LilvNode* node = lilv_port_get_name (module->getPlugin(), port);
             name = CharPointer_UTF8 (lilv_node_as_string (node));
@@ -356,7 +358,7 @@ private:
     ScopedPointer<LV2Module> module;
     OwnedArray<LV2Parameter> params;
 
-    PortType::ChannelMapping inputs, outputs;
+    ChannelConfig channels;
     uint32 numPorts;
     uint32 midiPort;
     uint32 notifyPort;
