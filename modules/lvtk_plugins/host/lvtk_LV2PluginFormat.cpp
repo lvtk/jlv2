@@ -52,50 +52,38 @@ public:
         midiPort   = module->getMidiPort();
         notifyPort = LV2UI_INVALID_PORT_INDEX;
 
+        // TODO: channel/param mapping should all go in LV2Module
         const LilvPlugin* plugin (module->getPlugin());
         for (uint32 p = 0; p < numPorts; ++p)
         {
             const LilvPort* port (module->getPort (p));
             const bool input = module->isPortInput (p);
             const PortType type = module->getPortType (p);
-
+ 
+            PortType::ChannelMapping& mapping = input ? inputs : outputs;
+            mapping.addPort (type, p);
+            
             if (input)
             {
-                switch (type.id())
+                
+                if (PortType::Control == type)
                 {
-                    case PortType::Audio: audioIns.add (p); break;
-                    case PortType::Atom: atomIns.add (p); break;
-                    case PortType::Control:
-                    {
-                        LV2Parameter* param = new LV2Parameter (plugin, port);
-                        float min = 0.0f, max = 1.0f, def = 0.0f;
-                        module->getPortRange (p, min, max, def);
-                        param->setMinMaxValue (min, max, def);
-                        ctlIns.add (p); params.add (param);
-                        break;
-                    }
-                    case PortType::CV: cvIns.add (p); break;
-                    case PortType::Unknown:
-                    default:
-                        break;
+                    LV2Parameter* param = new LV2Parameter (plugin, port);
+                    params.add (param);
+                    
+                    float min = 0.0f, max = 1.0f, def = 0.0f;
+                    module->getPortRange (p, min, max, def);
+                    param->setMinMaxValue (min, max, def);
                 }
             }
             else
             {
-                switch (type.id())
-                {
-                    case PortType::Audio: audioOuts.add (p); break;
-                    case PortType::Atom: atomOuts.add (p); break;
-                    case PortType::Control: ctlOuts.add (p); break;
-                    case PortType::CV: cvOuts.add (p); break;
-                    case PortType::Unknown:
-                    default:
-                        break;
-                }
+               
             }
         }
 
-        setPlayConfigDetails (audioIns.size(), audioOuts.size(), 44100.0, 1024);
+        setPlayConfigDetails (inputs.getNumChannels (PortType::Audio),
+                              outputs.getNumChannels (PortType::Audio), 44100.0, 1024);
     }
 
 
@@ -164,13 +152,15 @@ public:
     //==============================================================================
     void prepareToPlay (double sampleRate, int blockSize)
     {
-        setPlayConfigDetails (audioIns.size(), audioOuts.size(), sampleRate, blockSize);
+        setPlayConfigDetails (inputs.getNumChannels (PortType::Audio),
+                              outputs.getNumChannels (PortType::Audio),
+                              sampleRate, blockSize);
         initialise();
 
         if (initialised)
         {
             module->setSampleRate (sampleRate);
-            tempBuffer.setSize (jmax (1, audioOuts.size()), blockSize);
+            tempBuffer.setSize (jmax (1, getNumOutputChannels()), blockSize);
             module->activate();
         }
     }
@@ -207,115 +197,17 @@ public:
             { }
         }
         
-        for (int32 i = audioIns.size(); --i >= 0;) {
-            module->connectPort (audioIns.getUnchecked (i), audio.getSampleData (i));
-        }
+        for (int32 i = getNumInputChannels(); --i >= 0;)
+            module->connectPort (inputs.getAudioPort (i), audio.getSampleData (i));
 
-        for (int32 i = audioOuts.size(); --i >= 0;) {
-            module->connectPort (audioOuts.getUnchecked(i), tempBuffer.getSampleData (i));
-        }
+        for (int32 i = getNumOutputChannels(); --i >= 0;)
+            module->connectPort (outputs.getAudioPort (i), tempBuffer.getSampleData (i));
 
         module->run ((uint32) numSamples);
 
         for (int i = getNumOutputChannels(); --i >= 0;)
             audio.copyFrom (i, 0, tempBuffer.getSampleData (i), numSamples);
     }
-
-#if 0
-    void processBlock (AudioSampleBuffer& buffer, AtomBuffer& atoms)
-    {
-        // FIXME: module->readEvents();
-        const int numSamples = buffer.getNumSamples();
-
-        if (initialised)
-        {
-            if (AudioPlayHead* const playHead = getPlayHead())
-            {
-                AudioPlayHead::CurrentPositionInfo position;
-                playHead->getCurrentPosition (position);
-
-                switch (position.frameRate)
-                {
-                    case AudioPlayHead::fps24:
-                        break;
-                    case AudioPlayHead::fps25:
-                        break;
-                    case AudioPlayHead::fps30:
-                        break;
-
-                    default: break;
-                }
-
-                if (position.isLooping)
-                { }
-                else
-                { }
-            }
-
-            if (wantsMidiMessages)
-            {
-                uint32 control (module->getMidiPort());
-                if (LV2UI_INVALID_PORT_INDEX != control)
-                    module->connectPort (control, atoms.getBuffer());
-            }
-
-            for (int i = getNumInputChannels(); --i >= 0;)
-            {} //FIXME:   module->connectChannel (i, buffer.getSampleData(i),Bke::audioPort, true);
-
-            for (int i = getNumOutputChannels(); --i >= 0;)
-            {} //FIXME:   module->connectChannel (i, tempBuffer.getSampleData (i), Bke::audioPort, false);
-
-
-            const uint32 notify (module->getNotifyPort());
-
-            if (notify != LV2UI_INVALID_PORT_INDEX)
-            {
-                atomBuffer.clear (false);
-                module->connectPort (notify, atomBuffer.getBuffer());
-            }
-
-            module->process (uint32 (numSamples));
-
-            // clear input atoms, to make room for notifications
-            atoms.clear (true);
-
-            if (notify != LV2UI_INVALID_PORT_INDEX)
-            {
-                atoms.addEvents (atomBuffer, numSamples);
-#if 0
-                LV2_ATOM_SEQUENCE_FOREACH (atomBuffer.getAtomSequence(), ev)
-                {
-                    String blank (LV2_ATOM__Blank);
-                    lvtk::Atom atom (&ev->body);
-                    lvtk::AtomObject obj (atom.as_object());
-
-                    std::cout << "blank: " << sym.unmap ((uint32_t) blank.hashCode()) << std::endl;
-                    std::cout << "frames: " << ev->time.frames
-                              << " type: " << ev->body.type << " size: " << ev->body.size << " => " << sym.unmap (ev->body.type) << "\n"
-                              << " otype: " << obj.otype() << " => " << sym.unmap (obj.otype()) << "\n"
-                              << "----- " << std::endl;
-                }
-#endif
-            }
-
-            for (int i = getNumOutputChannels(); --i >= 0;)
-                buffer.copyFrom (i, 0, tempBuffer.getSampleData (i), numSamples);
-        }
-        else
-        {
-            // Not initialised, so just bypass..
-            for (int i = 0; i < getNumOutputChannels(); ++i)
-                buffer.clear (i, 0, numSamples);
-        }
-
-        {
-            // copy any incoming midi..
-            // const ScopedLock sl (midiInLock);
-            // midiMessages.swapWith (incomingMidi);
-            // incomingMidi.clear();
-        }
-    }
-#endif
 
     //==============================================================================
     bool hasEditor() const { return false; }
@@ -325,10 +217,10 @@ public:
     const String getInputChannelName (int index) const
     {
         String name = String ("Audio In ") + String (index + 1);
-        if (! isPositiveAndBelow (index, audioIns.size()))
+        if (! isPositiveAndBelow (index, inputs.getNumChannels (PortType::Audio)))
             return name;
         
-        if (const LilvPort* port = module->getPort (audioIns.getUnchecked (index)))
+        if (const LilvPort* port = module->getPort (inputs.getAudioPort (index)))
         {
             LilvNode* node = lilv_port_get_name (module->getPlugin(), port);
             name = CharPointer_UTF8 (lilv_node_as_string (node));
@@ -340,13 +232,14 @@ public:
 
     bool isInputChannelStereoPair (int index) const { return false; }
 
-    const String getOutputChannelName (int index) const
+    const String
+    getOutputChannelName (int index) const
     {
         String name = String ("Audio Out ") + String (index + 1);
-        if (! isPositiveAndBelow (index, audioOuts.size()))
+        if (! isPositiveAndBelow (index, outputs.getNumChannels (PortType::Audio)))
             return name;
         
-        if (const LilvPort* port = module->getPort (audioOuts.getUnchecked (index)))
+        if (const LilvPort* port = module->getPort (outputs.getAudioPort (index)))
         {
             LilvNode* node = lilv_port_get_name (module->getPlugin(), port);
             name = CharPointer_UTF8 (lilv_node_as_string (node));
@@ -463,16 +356,13 @@ private:
     ScopedPointer<LV2Module> module;
     OwnedArray<LV2Parameter> params;
 
+    PortType::ChannelMapping inputs, outputs;
     uint32 numPorts;
     uint32 midiPort;
     uint32 notifyPort;
 
-    // port/channel maps
-    Array<uint32> audioIns, audioOuts, atomIns, atomOuts;
-    Array<uint32> ctlIns, ctlOuts, cvIns, cvOuts, evIns, evOuts;
-
     const char* getCategory() const { return module->getClassLabel().toUTF8(); }
-
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LV2PluginInstance)
 };
 
@@ -559,7 +449,7 @@ LV2PluginFormat::createInstanceFromDescription (const PluginDescription& desc, d
 
     if (LV2Module* module = priv->createModule (desc.fileOrIdentifier))
     {
-        module->instantiate (sampleRate, priv->features);
+        module->instantiate (sampleRate, priv->world->getFeatures());
         module->activate();
         return new LV2PluginInstance (*priv->world, module);
     }

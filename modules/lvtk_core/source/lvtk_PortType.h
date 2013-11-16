@@ -59,6 +59,8 @@ public:
     inline bool operator!= (const PortType& t) const { return (type != t.type); }
     inline bool operator<  (const PortType& t) const { return (type < t.type); }
 
+    inline operator int() const { return (int) this->type; }
+    
     /** Returns true if this is an Audio port */
     inline bool isAudio()   { return type == Audio; }
     /** Returns true if this is a Control port */
@@ -97,38 +99,104 @@ public:
         return res;
     }
 
+    /** Maps channel numbers to a port indexes for all port types. This is an attempt
+        to handle boiler-plate port to channel mapping functions */
     class ChannelMapping {
     public:
         
-        ChannelMapping()
+        inline ChannelMapping() { init(); }
+        
+        /** Maps an array of port types sorted by port index, to channels */
+        inline ChannelMapping (const Array<PortType>& types)
         {
-            ports.ensureStorageAllocated (PortType::Unknown);
+            init();
+            
+            uint32 i = 0;
+            for (const auto& t : types)
+                addPort (t, i++);
         }
         
+        inline void
+        clear()
+        {
+            for (auto* a : ports)
+                a->clearQuick();
+        }
+        
+        /** Add (append) a port to the map */
+        inline void
+        addPort (PortType type, uint32 index)
+        {
+            ports.getUnchecked(type)->add (index);
+        }
+        
+        inline bool
+        containsChannel (const PortType type, const int32 channel) const
+        {
+            if (type == Unknown)
+                return false;
+            
+            const Array<uint32>* const a (ports.getUnchecked (type));
+            return a->size() > 0 && isPositiveAndBelow (channel, a->size());
+        }
+        
+        int32  getNumChannels (PortType type) const { return ports.getUnchecked(type)->size(); }
+        uint32 getNumPorts    (PortType type) const { return ports.getUnchecked(type)->size(); }
+        
+        /** Get a port index for a channel */
+        inline uint32
+        getPortChecked (PortType type, const int32 channel) const
+        {
+            if (! containsChannel (type, channel))
+                return LV2UI_INVALID_PORT_INDEX;
+            
+            const Array<uint32>* const a (ports.getUnchecked (type));
+            return a->getUnchecked (channel);
+        }
+        
+        inline uint32 getPort (PortType type, const int32 channel) const { return ports.getUnchecked(type)->getUnchecked(channel); }
+        inline uint32 getAtomPort    (const int32 channel) const { return getPort (Atom, channel); }
+        inline uint32 getAudioPort   (const int32 channel) const { return getPort (Audio, channel); }
+        inline uint32 getControlPort (const int32 channel) const { return getPort (Control, channel); }
+        inline uint32 getCVPort      (const int32 channel) const { return getPort (CV, channel); }
+            
     private:
         
-        Array<Array<int32> > ports;
+        // owned arrays of arrays....
+        OwnedArray<Array<uint32> > ports;
     
+        inline void
+        init()
+        {
+            ports.ensureStorageAllocated (PortType::Unknown + 1);
+            for (int32 p = Control; p <= Unknown; ++p)
+                ports.add (new Array<uint32>());
+        }
     };
     
 private:
 
     /** @internal */
-    static inline const String& typeURI (unsigned id)
+    static inline const String&
+    typeURI (unsigned id)
     {
         assert (id <= Atom);
+        
         static const String uris[] = {
             String (LV2_CORE__ControlPort),
             String (LV2_CORE__AudioPort),
             String (LV2_CORE__CVPort),
             String (LV2_ATOM__AtomPort),
+            String (LV2_EVENT__EventPort),
             String ("http://lvtoolkit.org/ns#null")
         };
+        
         return uris [id];
     }
 
     /** @internal */
-    static inline const String& typeName (unsigned id)
+    static inline const String&
+    typeName (unsigned id)
     {
         assert (id <= Atom);
         static const String uris[] = {
