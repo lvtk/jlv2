@@ -14,8 +14,8 @@
     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef LVTK_RINGBUFFER_H
-#define LVTK_RINGBUFFER_H
+#ifndef LVTK_JUCE_RINGBUFFER_H
+#define LVTK_JUCE_RINGBUFFER_H
 
 class RingBuffer
 {
@@ -28,10 +28,10 @@ public:
     void setCapacity (uint32 newCapacity);
 
     inline bool canRead  (uint32 bytes) const  { return bytes <= (uint32) fifo.getNumReady() && bytes != 0; }
-    inline uint32 readSpace() const { return fifo.getNumReady(); }
+    inline uint32 getReadSpace() const { return fifo.getNumReady(); }
 
     inline bool canWrite (uint32 bytes) const { return bytes <= (uint32) fifo.getFreeSpace() && bytes != 0; }
-    inline uint32 writeSpace() const { return (uint32) fifo.getFreeSpace(); }
+    inline uint32 getWriteSpace() const { return (uint32) fifo.getFreeSpace(); }
 
     inline uint32 size() const { return (uint32) fifo.getTotalSize(); }
 
@@ -53,15 +53,10 @@ public:
         return vec1.size + vec2.size;
     }
 
-    inline uint32 write (const void* src, uint32 bytes)
-    {
-       return write ((const char*) src, bytes);
-    }
-
     template <typename T>
     uint32 writeType (const T& src)
     {
-        write ((char*) &src, sizeof (T));
+        write (&src, sizeof (T));
     }
 
     inline uint32
@@ -83,16 +78,11 @@ public:
         return vec1.size + vec2.size;
     }
 
-    inline uint32
-    read (void* dest, uint32 size, bool advance = true)
-    {
-       return read ((char*) dest, size, advance);
-    }
-
     struct Vector {
         uint32_t size;
         void*    buffer;
     };
+    
 #if 0
     void getReadVector (Vector* vec)
     {
@@ -123,12 +113,8 @@ public:
     void readAdvance (uint32_t bytes)  { fifo.finishedRead ((int) bytes); }
     void writeAdvance (uint32_t bytes) { fifo.finishedWrite ((int) bytes); }
 #endif
-    juce::CriticalSection& getReadLock() { return readLock; }
-    juce::CriticalSection& getWriteLock() { return writeLock; }
 
 private:
-
-    
     
     struct Vec
     {
@@ -140,8 +126,7 @@ private:
     juce::AbstractFifo fifo;
     juce::HeapBlock<char> block;
     char* buffer;
-    juce::CriticalSection readLock, writeLock;
     
 };
 
-#endif /* LVTK_RINGBUFFER_H */
+#endif /* LVTK_JUCE_RINGBUFFER_H */

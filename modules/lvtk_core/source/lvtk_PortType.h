@@ -17,7 +17,8 @@
 #ifndef LVTK_JUCE_PORTTYPE_H
 #define LVTK_JUCE_PORTTYPE_H
 
-/** The type of a port. */
+/** The type of a port. This is intended to be used when working with LV2 plugins but
+    could be used to represent ports for non-LV2 'things' */
 class PortType {
 public:
 
@@ -45,9 +46,12 @@ public:
 
     PortType (ID id) : type(id) { }
 
-    inline const String& uri() const { return typeURI (type); }
-    inline const String& name() const { return typeName (type); }
-    inline ID            id()  const { return type; }
+    /** Get a URI string for this port type */
+    inline const String& getURI()  const { return typeURI (type); }
+    /** Get a human readable name for this port type */
+    inline const String& getName() const { return typeName (type); }
+    /** Get the port type id. This is useful in switch statements */
+    inline ID               id()   const { return type; }
 
     inline bool operator== (const ID& id) const { return (type == id); }
     inline bool operator!= (const ID& id) const { return (type != id); }
@@ -55,14 +59,18 @@ public:
     inline bool operator!= (const PortType& t) const { return (type != t.type); }
     inline bool operator<  (const PortType& t) const { return (type < t.type); }
 
+    /** Returns true if this is an Audio port */
     inline bool isAudio()   { return type == Audio; }
+    /** Returns true if this is a Control port */
     inline bool isControl() { return type == Control; }
+    /** Returns true if this is a CV port */
     inline bool isCv()      { return type == CV; }
+    /** Returns true if this is an Atom port */
     inline bool isAtom()    { return type == Atom; }
+    /** Returns true if this is a MIDI port */
     inline bool isMidi()    { return type == Midi; }
 
-    /** Return true if two port types can connect to one another
-    */
+    /** Return true if two port types can connect to one another */
     static inline bool canConnect (const PortType& sourceType, const PortType& destType)
     {
         if (sourceType == PortType::Unknown || destType == PortType::Unknown)
@@ -82,8 +90,7 @@ public:
 
     /** Return true if this port type can connect to another
         @param other The other port type
-        @param isOutput Set true if 'this' is the output (source) type
-    */
+        @param isOutput Set true if 'this' is the output (source) type */
     inline bool canConnect (const PortType& other, bool isOutput = true) const
     {
         const bool res = isOutput ? canConnect (*this, other) : canConnect (other, *this);
@@ -137,6 +144,7 @@ private:
     ID type;
 };
 
+/** A detailed descption of a port. (not used currently) */
 struct PortDescription
 {
     PortDescription() : index(0), isInput (false), type (PortType::Unknown) { }
@@ -145,8 +153,5 @@ struct PortDescription
     bool        isInput;
     PortType    type;
 };
-
-
-
 
 #endif /* LVTK_JUCE_PORTTYPE_H */

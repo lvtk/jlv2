@@ -17,20 +17,22 @@
 #ifndef LVTK_JUCE_PORT_WRITER_H
 #define LVTK_JUCE_PORT_WRITER_H
 
-/** Function type for writing to a port buffer
-    Params are in order port, size, protocol, buffer
+/** Function type for writing to a port buffer. Params are in order port, size, protocol, buffer
     @note This is compatible with lvtk's port write ui method */
 typedef std::function<void(uint32_t, uint32_t, uint32_t, void const*)> PortWriteFunction;
 
+
+/** A simple type for writing/reading port values/messages through
+    a ringbuffer */
 struct PortEvent
 {
-    uint32_t index;
-    uint32_t protocol;
+    uint32_t index;     ///< The port index
+    uint32_t protocol;  ///< The port protocol
     union {
-        double decimal;
-        int64_t frames;
+        double decimal; ///< Timestamp as a decimal, units depends on context
+        int64_t frames; ///< Timestamp in audio frames
     } time;
-    uint32_t size;
+    uint32_t size;      ///< The size of data
 };
 
 

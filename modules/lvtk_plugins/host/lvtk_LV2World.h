@@ -22,6 +22,7 @@
 
     class  LV2Module;
 
+    /** Slim wrapper around LilvWorld.  Publishes commonly used LilvNodes */
     class LV2World
     {
     public:
@@ -40,23 +41,38 @@
         const LilvNode*   work_schedule;
         const LilvNode*   work_interface;
 
+        /** Create an LV2Module for a uri string */
         LV2Module* createModule (const String& uri);
 
-        const LilvPlugin* getPlugin (const String& uri);
-        const Lilv::Plugins getAllPlugins();
+        /** Get an LilvPlugin for a uri string */
+        const LilvPlugin* getPlugin (const String& uri) const;
+        
+        /** Get all Available Plugins */
+        const LilvPlugins* getAllPlugins() const;
 
+        /** Returns true if a feature is supported */
         bool isFeatureSupported (const String& featureURI);
+        
+        /** Returns true if the plugin uri is availble */
         bool isPluginAvailable (const String& uri);
+        
+        /** Returns true if the plugin is supported on this system */
         bool isPluginSupported (const String& uri);
 
-        Lilv::World& lilvWorld() { return world; }
+        /** Return the underlying LilvWorld* pointer */
+        inline LilvWorld* getLilvWorld() const { return world; }
 
+        /** Add a supported feature */
+        inline void addFeature (LV2Feature* feat, bool rebuild = true) { features.add (feat, rebuild); }
+        
+        /** Get supported features */
+        inline LV2FeatureArray& getFeatures() { return features; }
+        
     private:
 
-        Lilv::World world;
+        LilvWorld* world;
+        LV2FeatureArray features;
 
     };
-
-
 
 #endif /* LVTK_JUCE_LV2WORLD_H */

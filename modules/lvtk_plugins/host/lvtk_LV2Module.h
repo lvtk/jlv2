@@ -196,8 +196,8 @@ private:
     {
         if (worker && workResponses)
         {
-            workResponses->write (&size, sizeof (uint32));
-            workResponses->write (data, size);
+            workResponses->write ((const char*) &size, sizeof (uint32));
+            workResponses->write ((const char*) data, size);
             return LV2_WORKER_SUCCESS;
         }
         

@@ -20,17 +20,26 @@
 #ifndef LVTK_JUCE_LV2FEATURES_H
 #define LVTK_JUCE_LV2FEATURES_H
 
+
+/** A simple interface for implenting LV2 Features */
 class LV2Feature
 {
 public:
 
     LV2Feature() { }
     virtual ~LV2Feature() { }
+    
+    /** Get the LV2_Feature c-type.
+        The returned object should be owned by the subclass.  It is the 
+        subclass' responsibility to free any associated feature data. */
     virtual const LV2_Feature* getFeature() const = 0;
+    
+    /** Get the features URI as a string */
     virtual const String& getURI() const = 0;
 };
 
 
+/** An array of lv2 features */
 class LV2FeatureArray
 {
 public:
@@ -38,6 +47,8 @@ public:
     LV2FeatureArray() : needsBuilt (true) { }
     ~LV2FeatureArray() { }
 
+    /** Add a new feature to the array.  The passed LV2Feature will be owned
+        by this class */
     inline void add (LV2Feature* feature, bool rebuildArray = true)
     {
         ScopedPointer<LV2Feature> f (feature);
@@ -49,6 +60,7 @@ public:
         }
     }
 
+    /** Returns true if a feature has been added to the array */
     inline bool contains (const String& featureURI) const
     {
         for (int i = features.size(); --i >= 0; )

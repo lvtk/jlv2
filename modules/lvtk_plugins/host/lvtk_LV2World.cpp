@@ -19,32 +19,37 @@
 
     LV2World::LV2World()
     {
-        world.load_all();
-        lv2_InputPort   = world.new_uri (LV2_CORE__InputPort);
-        lv2_OutputPort  = world.new_uri (LV2_CORE__OutputPort);
-        lv2_AudioPort   = world.new_uri (LV2_CORE__AudioPort);
-        lv2_AtomPort    = world.new_uri (LV2_ATOM__AtomPort);
-        lv2_ControlPort = world.new_uri (LV2_CORE__ControlPort);
-        lv2_EventPort   = world.new_uri (LV2_EVENT__EventPort);
-        lv2_CVPort      = world.new_uri (LV2_CORE__CVPort);
-        midi_MidiEvent  = world.new_uri (LV2_MIDI__MidiEvent);
-        work_schedule   = world.new_uri (LV2_WORKER__schedule);
-        work_interface  = world.new_uri (LV2_WORKER__interface);
+        world = lilv_world_new();
+        lilv_world_load_all (world);
+        
+        lv2_InputPort   = lilv_new_uri (world, LV2_CORE__InputPort);
+        lv2_OutputPort  = lilv_new_uri (world, LV2_CORE__OutputPort);
+        lv2_AudioPort   = lilv_new_uri (world, LV2_CORE__AudioPort);
+        lv2_AtomPort    = lilv_new_uri (world, LV2_ATOM__AtomPort);
+        lv2_ControlPort = lilv_new_uri (world, LV2_CORE__ControlPort);
+        lv2_EventPort   = lilv_new_uri (world, LV2_EVENT__EventPort);
+        lv2_CVPort      = lilv_new_uri (world, LV2_CORE__CVPort);
+        midi_MidiEvent  = lilv_new_uri (world, LV2_MIDI__MidiEvent);
+        work_schedule   = lilv_new_uri (world, LV2_WORKER__schedule);
+        work_interface  = lilv_new_uri (world, LV2_WORKER__interface);
     }
 
     LV2World::~LV2World()
     {
-#define elilv_node_free(n) lilv_node_free (const_cast<LilvNode*> (n))
-        elilv_node_free (lv2_InputPort);
-        elilv_node_free (lv2_OutputPort);
-        elilv_node_free (lv2_AudioPort);
-        elilv_node_free (lv2_AtomPort);
-        elilv_node_free (lv2_ControlPort);
-        elilv_node_free (lv2_EventPort);
-        elilv_node_free (lv2_CVPort);
-        elilv_node_free (midi_MidiEvent);
-        elilv_node_free (work_schedule);
-        elilv_node_free (work_interface);
+#define _node_free(n) lilv_node_free (const_cast<LilvNode*> (n))
+        _node_free (lv2_InputPort);
+        _node_free (lv2_OutputPort);
+        _node_free (lv2_AudioPort);
+        _node_free (lv2_AtomPort);
+        _node_free (lv2_ControlPort);
+        _node_free (lv2_EventPort);
+        _node_free (lv2_CVPort);
+        _node_free (midi_MidiEvent);
+        _node_free (work_schedule);
+        _node_free (work_interface);
+        
+        lilv_world_free (world);
+        world = nullptr;
     }
 
     LV2Module*
@@ -60,28 +65,26 @@
     }
 
     const LilvPlugin*
-    LV2World::getPlugin (const String& uri)
+    LV2World::getPlugin (const String& uri) const
     {
-        LilvNode* p (world.new_uri (uri.toUTF8()));
+        LilvNode* p (lilv_new_uri (world, uri.toUTF8()));
         const LilvPlugin* plugin = lilv_plugins_get_by_uri (getAllPlugins(), p);
         lilv_node_free (p);
 
         return plugin;
     }
 
-    const Lilv::Plugins
-    LV2World::getAllPlugins()
+    const LilvPlugins*
+    LV2World::getAllPlugins() const
     {
-        return world.get_all_plugins();
+        return lilv_world_get_all_plugins (world);
     }
 
     bool
     LV2World::isFeatureSupported (const String& featureURI)
     {
-#if 0
        if (features.contains (featureURI))
           return true;
-#endif
 
        if (featureURI == LV2_WORKER__schedule)
           return true;

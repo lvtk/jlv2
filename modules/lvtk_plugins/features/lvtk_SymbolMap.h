@@ -21,16 +21,13 @@
 #define LVTK_JUCE_SYMMAP_H
 
 /** A function type for mapping uris */
-typedef std::function<LV2_URID(const char*)> URIMapFunc;
-
-/** A function type for unmapping uris */
-typedef std::function<const char*(LV2_URID)> URIUnmapFunc;
+typedef std::function<LV2_URID(const char*)> URIMapFunction;
+/** A function type for unmapping urids */
+typedef std::function<const char*(LV2_URID)> URIUnmapFunction;
 
 /** Maintains a map of Strings/Symbols to integers
-
     This class also implements LV2 URID Map/Unmap features and is fully
-    compatible with the current LV2 (1.6.0+) specification.
- */
+    compatible with the current LV2 (1.6.0+) specification. */
 class SymbolMap
 {
 public:
@@ -44,10 +41,8 @@ public:
     }
     
     /** Map a symbol/uri to an unsigned integer
-     
         @param key The symbol to map
-        @return A mapped URID, a return of 0 indicates failure
-     */
+        @return A mapped URID, a return of 0 indicates failure */
     inline LV2_URID
     map (const char* key)
     {
@@ -63,10 +58,8 @@ public:
     }
     
     /** Containment test of a URI 
-     
         @param uri The URI to test
-        @return True if found
-     */
+        @return True if found */
     inline bool
     contains (const char* uri)
     {
@@ -74,10 +67,8 @@ public:
     }
     
     /** Containment test of a URID 
-        
         @param urid The URID to test
-        @return True if found
-     */
+        @return True if found */
     inline bool
     contains (LV2_URID urid)
     {
@@ -85,10 +76,8 @@ public:
     }
     
     /** Unmap an already mapped id to its symbol 
-     
         @param urid The URID to unmap
-        @return The previously mapped symbol or 0 if the urid isn't in the cache
-     */
+        @return The previously mapped symbol or 0 if the urid isn't in the cache */
     inline const char*
     unmap (LV2_URID urid)
     {
@@ -106,10 +95,12 @@ public:
         unmapped.clear();
     }
     
-    /** Create a URID Map LV2Feature.  */
+    /** Create a URID Map LV2Feature. Thie created feature MUST be deleted
+        before the SymbolMap is deleted */
     inline LV2Feature*  createMapFeature()   { return new MapFeature (this); }
 
-    /** Create a URID Unmap LV2Feature. Can be passed to an LV2 instance */
+    /** Create a URID Unmap LV2Feature. Thie created feature MUST be deleted
+        before the SymbolMap is deleted */
     inline LV2Feature*  createUnmapFeature() { return new UnmapFeature (this); }
 
 private:
@@ -173,7 +164,6 @@ private:
         }
 
         virtual ~UnmapFeature() { }
-        
         const String& getURI() const { return uri; }
         const LV2_Feature* getFeature() const { return &feat; }
         

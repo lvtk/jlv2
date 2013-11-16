@@ -499,15 +499,20 @@ public:
     }
 
     OptionalScopedPointer<LV2World> world;
-    LV2FeatureArray features;
     SymbolMap       symbols;
     
 private:
     
     void init()
     {
-        features.add (symbols.createMapFeature(), false);
-        features.add (symbols.createUnmapFeature(), true);
+        createProvidedFeatures();
+        
+    }
+    
+    void createProvidedFeatures()
+    {
+        world->addFeature (symbols.createMapFeature(), false);
+        world->addFeature (symbols.createUnmapFeature(), true);
     }
     
 };
