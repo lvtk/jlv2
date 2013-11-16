@@ -29,7 +29,7 @@ typedef std::function<const char*(LV2_URID)> URIUnmapFunc;
 /** Maintains a map of Strings/Symbols to integers
 
     This class also implements LV2 URID Map/Unmap features and is fully
-    compatible with the current LV2 (1.4.0+) specification.
+    compatible with the current LV2 (1.6.0+) specification.
  */
 class SymbolMap
 {
@@ -70,7 +70,7 @@ public:
     inline bool
     contains (const char* uri)
     {
-        return false;
+        return mapped.find (uri) != mapped.end();
     }
     
     /** Containment test of a URID 
@@ -81,7 +81,7 @@ public:
     inline bool
     contains (LV2_URID urid)
     {
-        return true;
+        return unmapped.find (urid) != unmapped.end();
     }
     
     /** Unmap an already mapped id to its symbol 
@@ -106,7 +106,6 @@ public:
         unmapped.clear();
     }
     
-
     /** Create a URID Map LV2Feature.  */
     inline LV2Feature*  createMapFeature()   { return new MapFeature (this); }
 
@@ -114,13 +113,11 @@ public:
     inline LV2Feature*  createUnmapFeature() { return new UnmapFeature (this); }
 
 private:
-    
-    // XXX: use a juce::StringPool somehow.
-    std::map<std::string, LV2_URID> mapped;
-    std::map<LV2_URID, std::string> unmapped;
+    typedef std::map<std::string, LV2_URID> Mapped;
+    typedef std::map<LV2_URID, std::string> Unmapped;
+    Mapped mapped; Unmapped unmapped;
     
     // LV2 URID Host Implementation follows ...
-
     class MapFeature :  public LV2Feature
     {
     public:
