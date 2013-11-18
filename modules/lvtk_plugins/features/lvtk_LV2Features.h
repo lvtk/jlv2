@@ -69,19 +69,54 @@ public:
         return false;
     }
 
+    inline LV2Feature*
+    getFeature (const String& uri) const
+    {
+        for (int i = 0; i < features.size(); ++i)
+            if (uri == features.getUnchecked(i)->getURI())
+                return features.getUnchecked(i);
+        return nullptr;
+    }
+    
+    template<class FeatureType>
+    inline FeatureType* getFeature() const
+    {
+        for (int i = features.size(); --i >= 0;)
+            if (FeatureType* f = dynamic_cast<FeatureType*> (features.getUnchecked (i)))
+                return f;
+        return nullptr;
+    }
+    
     /** Get a C-Style array of feautres */
-    inline const LV2_Feature* const*
+    inline LV2_Feature* const*
     getFeatures() const
     {
         jassert (needsBuilt == false);
         return array.getData();
     }
 
+    inline void
+    getFeatures (Array<const LV2_Feature*>& feats, bool nullTerminated = false) const
+    {
+        feats = Array<const LV2_Feature*> (array.getData());
+        if (nullTerminated)
+            feats.add (nullptr);
+    }
+    
     inline int size() const { return features.size(); }
-    inline const LV2_Feature* begin() const { return getFeatures() [0]; }
-    inline const LV2_Feature* end()   const { return getFeatures() [features.size()]; }
-    inline operator const LV2_Feature* const*() const { return getFeatures(); }
+    inline LV2_Feature* begin() const { return (LV2_Feature*) array [0]; }
+    inline LV2_Feature* end()   const { return (LV2_Feature*) array [features.size() - 1]; }
+    inline operator LV2_Feature* const*() const { return array.getData(); }
 
+    inline void listFeatures() const
+    {
+        for (int i = 0; i < features.size() + 1; ++i)
+            if (array[i] != nullptr)
+                Logger::writeToLog ("feature: " + String (i) + String(" ") + array[i]->URI);
+            else
+                Logger::writeToLog ("feature: NULL termination");
+    }
+    
 private:
     
     OwnedArray<LV2Feature>  features;
@@ -95,7 +130,7 @@ private:
         array.calloc (features.size() + 1);
         for (int i = 0; i < features.size(); ++i)
             array[i] = const_cast<LV2_Feature*> (features[i]->getFeature());
-        
+                    
         array [features.size()] = nullptr;
     }
 

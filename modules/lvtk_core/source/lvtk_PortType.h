@@ -154,8 +154,8 @@ public:
     inline void
     clear()
     {
-        for (auto* a : ports)
-            a->clearQuick();
+        for (int i = 0; i < ports.size(); ++i)
+            ports.getUnchecked(i)->clearQuick();
     }
     
     /** Add (append) a port to the map */
@@ -189,6 +189,8 @@ public:
         return a->getUnchecked (channel);
     }
     
+    const Array<uint32>& getPorts (const PortType type) const { return *ports.getUnchecked (type); }
+    
     inline uint32
     getPort (const PortType type, const int32 channel) const
     {
@@ -199,6 +201,9 @@ public:
     inline uint32 getAudioPort   (const int32 channel) const { return ports.getUnchecked(PortType::Audio)->getUnchecked(channel); }
     inline uint32 getControlPort (const int32 channel) const { return ports.getUnchecked(PortType::Control)->getUnchecked(channel); }
     inline uint32 getCVPort      (const int32 channel) const { return ports.getUnchecked(PortType::CV)->getUnchecked(channel); }
+    inline uint32 getEventPort   (const int32 channel) const { return ports.getUnchecked(PortType::Event)->getUnchecked(channel); }
+    inline uint32 getMidiPort    (const int32 channel) const { return ports.getUnchecked(PortType::Midi)->getUnchecked(channel); }
+    
     
 private:
     
@@ -237,13 +242,18 @@ public:
     inline const ChannelMapping& getOutputs() const { return outputs; }
     
     inline uint32 getPort (PortType type, int32 channel, bool isInput) const { return getChannelMapping(isInput).getPort (type, channel); }
+    inline uint32 getInputPort  (const PortType type, const int32 channel) const { return inputs.getPort (type, channel); }
+    inline uint32 getOutputPort (const PortType type, const int32 channel) const { return outputs.getPort (type, channel); }
+    
     inline uint32 getAtomPort (int32 channel, bool isInput) const { return getChannelMapping(isInput).getAudioPort(channel); }
     inline uint32 getAudioPort (int32 channel, bool isInput) const { return getChannelMapping(isInput).getAudioPort(channel); }
     inline uint32 getControlPort (int32 channel, bool isInput) const { return getChannelMapping(isInput).getAudioPort(channel); }
     inline uint32 getCVPort (int32 channel, bool isInput) const { return getChannelMapping(isInput).getAudioPort(channel); }
     
-    inline uint32 getAudioInputPort  (const int32 channel) const { return inputs.getAudioPort (channel); }
-    inline uint32 getAudioOutputPort (const int32 channel) const { return outputs.getAudioPort (channel); }
+    inline uint32 getAudioInputPort    (const int32 channel) const { return inputs.getAudioPort (channel); }
+    inline uint32 getAudioOutputPort   (const int32 channel) const { return outputs.getAudioPort (channel); }
+    inline uint32 getControlInputPort  (const int32 channel) const { return inputs.getControlPort (channel); }
+    inline uint32 getControlOutputPort (const int32 channel) const { return outputs.getControlPort (channel); }
     
     inline int32
     getNumChannels (const PortType type, bool isInput) const

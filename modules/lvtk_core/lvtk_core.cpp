@@ -23,5 +23,6 @@ namespace lvtk {
     
 #include "source/lvtk_PortWriter.cpp"
 #include "source/lvtk_RingBuffer.cpp"
+#include "source/lvtk_WorkThread.cpp"
     
 }}

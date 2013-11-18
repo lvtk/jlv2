@@ -127,7 +127,7 @@ private:
         MapFeature (SymbolMap *parent)
         {
             uri = LV2_URID__map;
-            feat.URI    = uri.toUTF8();
+            feat.URI    = uri.toRawUTF8();
             data.handle = (void*) parent;
             data.map    = &MapFeature::map;
             feat.data   = &data;
@@ -161,7 +161,7 @@ private:
         UnmapFeature (SymbolMap* parent)
         {
             uri = LV2_URID__unmap;
-            feat.URI    = uri.toUTF8();
+            feat.URI    = uri.toRawUTF8();
             data.handle = (void*) parent;
             data.unmap  = &UnmapFeature::unmap;
             feat.data   = &data;

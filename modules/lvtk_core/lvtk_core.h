@@ -38,6 +38,7 @@
 #include <lv2/lv2plug.in/ns/lv2core/lv2.h>
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/event/event.h>
+#include <lv2/lv2plug.in/ns/ext/log/log.h>
 #include <lv2/lv2plug.in/ns/ext/morph/morph.h>
 #include <lv2/lv2plug.in/ns/ext/midi/midi.h>
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
@@ -53,6 +54,8 @@ namespace lvtk {
 #include "source/lvtk_PortType.h"
 #include "source/lvtk_PortWriter.h"
 #include "source/lvtk_RingBuffer.h"
+#include "source/lvtk_Semaphore.h"
+#include "source/lvtk_WorkThread.h"
 
 }}
 

@@ -17,21 +17,18 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef LVTK_JUCE_LV2FORMAT_HPP
-#define LVTK_JUCE_LV2FORMAT_HPP
+#ifndef LVTK_JUCE_LV2FORMAT_H
+#define LVTK_JUCE_LV2FORMAT_H
 
 
-    class LV2World;
-    class SymbolMap;
+class LV2World;
+class SymbolMap;
 
-//==============================================================================
-/**
-    Implements a plugin format manager for LV2 plugins in Juce Apps.
-*/
+
+/** Implements a plugin format manager for LV2 plugins in Juce Apps. */
 class LV2PluginFormat :   public AudioPluginFormat
 {
 public:
-    //==============================================================================
     
     /** Create a self-contained LV2PluginFormat (owns all data) */
     LV2PluginFormat();
@@ -41,11 +38,9 @@ public:
     
     ~LV2PluginFormat();
 
-    //==============================================================================
     String getName() const { return "LV2"; }
     void findAllTypesForFile (OwnedArray <PluginDescription>& descrips, const String& identifier);
-    AudioPluginInstance* createInstanceFromDescription (const PluginDescription& desc, double initialSampleRate,
-                                                        int initialBufferSize);
+    AudioPluginInstance* createInstanceFromDescription (const PluginDescription& desc, double sampleRate, int bufferSize);
     bool fileMightContainThisPluginType (const String& fileOrIdentifier);
     String getNameOfPluginFromIdentifier (const String& fileOrIdentifier);
     StringArray searchPathsForPlugins (const FileSearchPath&, bool recursive);
@@ -58,10 +53,10 @@ public:
 
 private:
 
-    class Private;
-    ScopedPointer<Private> priv;
+    class Internal;
+    ScopedPointer<Internal> priv;
 
 };
 
 
-#endif   // LVTK_JUCE_LV2FORMAT_HPP
+#endif   // LVTK_JUCE_LV2FORMAT_H

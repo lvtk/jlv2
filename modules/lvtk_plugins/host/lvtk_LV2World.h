@@ -22,7 +22,8 @@
 
     class  LV2Module;
 
-    /** Slim wrapper around LilvWorld.  Publishes commonly used LilvNodes */
+    /** Slim wrapper around LilvWorld.  Publishes commonly used LilvNodes and
+        manages heavy weight features (like LV2 Worker) */
     class LV2World
     {
     public:
@@ -40,7 +41,7 @@
         const LilvNode*   midi_MidiEvent;
         const LilvNode*   work_schedule;
         const LilvNode*   work_interface;
-
+        
         /** Create an LV2Module for a uri string */
         LV2Module* createModule (const String& uri);
 
@@ -60,19 +61,35 @@
         bool isPluginSupported (const String& uri);
 
         /** Return the underlying LilvWorld* pointer */
-        inline LilvWorld* getLilvWorld() const { return world; }
+        inline LilvWorld* getWorld() const { return world; }
 
         /** Add a supported feature */
         inline void addFeature (LV2Feature* feat, bool rebuild = true) { features.add (feat, rebuild); }
         
         /** Get supported features */
-        inline LV2FeatureArray& getFeatures() { return features; }
+        inline LV2FeatureArray& getFeatureArray() { return features; }
+        
+        /** Get supported features as a juce array.
+            This can be used when instantiating plugins and uis. Don't
+            forget to terminate the array with nullptr before passing
+            to a plugin instance */
+        inline void getFeatures (Array<const LV2_Feature*>& feats) const { features.getFeatures (feats); }
+        
+        /** Get a worker thread */
+        inline WorkThread& getWorkThread();
+        
+        /** Returns the total number of available worker threads */
+        inline int32 getNumWorkThreads() const { return numThreads; }
         
     private:
 
         LilvWorld* world;
         LV2FeatureArray features;
-
+       
+        // a simple rotating thread pool
+        int32 currentThread, numThreads;
+        OwnedArray<WorkThread> threads;
+       
     };
 
 #endif /* LVTK_JUCE_LV2WORLD_H */

@@ -59,12 +59,9 @@ public:
             const LilvPort* port (module->getPort (p));
             const bool input = module->isPortInput (p);
             const PortType type = module->getPortType (p);
- 
-            channels.addPort (type, p, input);
-            
+   
             if (input)
             {
-                
                 if (PortType::Control == type)
                 {
                     LV2Parameter* param = new LV2Parameter (plugin, port);
@@ -79,8 +76,10 @@ public:
             {
                
             }
+            
         }
 
+        const ChannelConfig& channels (module->getChannelConfig());
         setPlayConfigDetails (channels.getNumAudioInputs(),
                               channels.getNumAudioOutputs(), 44100.0, 1024);
     }
@@ -151,7 +150,9 @@ public:
     //==============================================================================
     void prepareToPlay (double sampleRate, int blockSize)
     {
-        setPlayConfigDetails (channels.getNumAudioInputs(), channels.getNumAudioOutputs(),
+        const ChannelConfig& channels (module->getChannelConfig());
+        setPlayConfigDetails (channels.getNumAudioInputs(),
+                              channels.getNumAudioOutputs(),
                               sampleRate, blockSize);
         initialise();
 
@@ -195,41 +196,32 @@ public:
             { }
         }
         
+        const ChannelConfig& chans (module->getChannelConfig());
+        
         for (int32 i = getNumInputChannels(); --i >= 0;)
-            module->connectPort (channels.getAudioOutputPort (i), audio.getSampleData (i));
+            module->connectPort (chans.getAudioInputPort(i), audio.getSampleData (i));
 
         for (int32 i = getNumOutputChannels(); --i >= 0;)
-            module->connectPort (channels.getAudioOutputPort (i), tempBuffer.getSampleData (i));
+            module->connectPort (chans.getAudioOutputPort(i), tempBuffer.getSampleData (i));
 
         module->run ((uint32) numSamples);
 
-        for (int i = getNumOutputChannels(); --i >= 0;)
+        for (int32 i = getNumOutputChannels(); --i >= 0;)
             audio.copyFrom (i, 0, tempBuffer.getSampleData (i), numSamples);
     }
 
     //==============================================================================
     bool hasEditor() const { return false; }
     AudioProcessorEditor* createEditor() { return nullptr; }
-
     
     //==============================================================================
     const String
     getInputChannelName (int index) const
     {
-        const ChannelMapping& inputs (channels.getInputs());
-        
-        String name = String ("Audio In ") + String (index + 1);
-        if (! isPositiveAndBelow (index, inputs.getNumChannels (PortType::Audio)))
-            return name;
-        
-        if (const LilvPort* port = module->getPort (inputs.getAudioPort (index)))
-        {
-            LilvNode* node = lilv_port_get_name (module->getPlugin(), port);
-            name = CharPointer_UTF8 (lilv_node_as_string (node));
-            lilv_node_free (node);
-        }
-        
-        return name;
+        const ChannelConfig& chans (module->getChannelConfig());
+        if (! isPositiveAndBelow (index, chans.getNumAudioInputs()))
+            return String ("Audio In ") + String (index + 1);
+        return module->getPortName (chans.getAudioPort (index, true));
     }
 
     bool isInputChannelStereoPair (int index) const { return false; }
@@ -237,18 +229,11 @@ public:
     const String
     getOutputChannelName (int index) const
     {
-        String name = String ("Audio Out ") + String (index + 1);
-        if (! isPositiveAndBelow (index, channels.getNumAudioOutputs()))
-            return name;
+        const ChannelConfig& chans (module->getChannelConfig());
+        if (! isPositiveAndBelow (index, chans.getNumAudioOutputs()))
+            return String ("Audio Out ") + String (index + 1);
         
-        if (const LilvPort* port = module->getPort (channels.getAudioPort (index, false)))
-        {
-            LilvNode* node = lilv_port_get_name (module->getPlugin(), port);
-            name = CharPointer_UTF8 (lilv_node_as_string (node));
-            lilv_node_free (node);
-        }
-        
-        return name;
+        return module->getPortName (chans.getAudioPort (index, false));
     }
 
     bool isOutputChannelStereoPair (int index) const { return false; }
@@ -358,7 +343,6 @@ private:
     ScopedPointer<LV2Module> module;
     OwnedArray<LV2Parameter> params;
 
-    ChannelConfig channels;
     uint32 numPorts;
     uint32 midiPort;
     uint32 notifyPort;
@@ -369,22 +353,27 @@ private:
 };
 
 
-class LV2PluginFormat::Private
+class LV2PluginFormat::Internal
 {
 public:
 
-    Private ()
+    Internal()
     {
         world.setOwned (new LV2World ());
         init();
     }
     
-    Private (LV2World& w)
+    Internal (LV2World& w)
     {
         world.setNonOwned (&w);
         init();
     }
 
+    ~Internal()
+    {
+        world.clear();
+    }
+    
     LV2Module* createModule (const String& uri)
     {
         return world->createModule (uri);
@@ -398,19 +387,30 @@ private:
     void init()
     {
         createProvidedFeatures();
-        
     }
     
     void createProvidedFeatures()
     {
         world->addFeature (symbols.createMapFeature(), false);
         world->addFeature (symbols.createUnmapFeature(), true);
+        
+       #if LV2_LOGGING
+        world->getFeatures().listFeatures();
+       #endif
     }
     
 };
 
-LV2PluginFormat::LV2PluginFormat () : priv (new LV2PluginFormat::Private()) { }    
-LV2PluginFormat::LV2PluginFormat (LV2World& w) : priv (new LV2PluginFormat::Private (w)) { }
+LV2PluginFormat::LV2PluginFormat()
+{
+    priv = new LV2PluginFormat::Internal();
+}
+
+LV2PluginFormat::LV2PluginFormat (LV2World& w)
+{
+    priv = new LV2PluginFormat::Internal (w);
+}
+
 LV2PluginFormat::~LV2PluginFormat() { priv = nullptr; }
 
 SymbolMap& LV2PluginFormat::getSymbolMap() { return priv->symbols; }
@@ -427,7 +427,6 @@ LV2PluginFormat::findAllTypesForFile (OwnedArray <PluginDescription>& results,
     desc->pluginFormatName = String ("LV2");
     desc->uid = 0;
 
-    
     try
     {
         ScopedPointer<AudioPluginInstance> instance (createInstanceFromDescription (*desc.get(), 44100.0, 1024));
@@ -451,9 +450,17 @@ LV2PluginFormat::createInstanceFromDescription (const PluginDescription& desc, d
 
     if (LV2Module* module = priv->createModule (desc.fileOrIdentifier))
     {
-        module->instantiate (sampleRate, priv->world->getFeatures());
-        module->activate();
-        return new LV2PluginInstance (*priv->world, module);
+        Result res (module->instantiate (sampleRate));
+        if (res.wasOk())
+        {
+            module->activate();
+            return new LV2PluginInstance (*priv->world, module);
+        }
+        else
+        {
+            JUCE_LV2_LOG (res.getErrorMessage());
+            return nullptr;
+        }
     }
 
     JUCE_LV2_LOG ("Failed creating LV2 plugin instance");

@@ -25,6 +25,10 @@ namespace lvtk {
 
 #include "host/lvtk_LV2Module.cpp"
 #include "host/lvtk_LV2PluginFormat.cpp"
+#include "host/lvtk_LV2PluginModel.cpp"
 #include "host/lvtk_LV2World.cpp"
+    
+#include "features/lvtk_LV2Log.cpp"
+#include "features/lvtk_LV2Worker.cpp"
     
 }}

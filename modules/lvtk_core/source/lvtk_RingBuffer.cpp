@@ -14,8 +14,8 @@
     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-RingBuffer::RingBuffer (uint32 capacity)
-    : fifo (0), buffer (nullptr)
+RingBuffer::RingBuffer (int32 capacity)
+    : fifo (1), buffer (nullptr)
 {
     setCapacity (capacity);
 }
@@ -23,20 +23,26 @@ RingBuffer::RingBuffer (uint32 capacity)
 RingBuffer::~RingBuffer()
 {
     fifo.reset();
+    fifo.setTotalSize (1);
     buffer = nullptr;
     block.free();
 }
 
 void
-RingBuffer::setCapacity (uint32 newCapacity)
+RingBuffer::setCapacity (int32 newCapacity)
 {
-    size_t capacity = 1;
-    while (capacity < newCapacity)
-        capacity *= 2;
+    newCapacity = nextPowerOfTwo (newCapacity);
+    
+    if (fifo.getTotalSize() != newCapacity)
+    {
+        HeapBlock<uint8> newBlock;
+        newBlock.allocate (newCapacity, true);
+        {
+            block.swapWith (newBlock);
+            buffer = block.getData();
+            fifo.setTotalSize (newCapacity);
+        }
+    }
 
-    block.allocate (capacity, true);
-    buffer = block.getData();
-
-    fifo.setTotalSize ((int) capacity);
     fifo.reset();
 }

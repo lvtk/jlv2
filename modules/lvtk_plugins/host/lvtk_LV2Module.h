@@ -20,25 +20,6 @@
 #ifndef LVTK_JUCE_LV2MODULE_H
 #define LVTK_JUCE_LV2MODULE_H
 
-#define LV2_UI__JuceUI           LV2_UI_PREFIX "JuceUI"
-
-namespace LV2Callbacks {
-
-   inline unsigned
-   uiSupported (const char* hostType, const char* uiType)
-   {
-      String host (hostType);
-      String ui (uiType);
-
-      if (host == LV2_UI__X11UI && ui == LV2_UI__X11UI)
-         return 2;
-      else if (ui == LV2_UI__JuceUI)
-         return 1;
-
-      return suil_ui_supported (hostType, uiType);
-   }
-}
-
 /** A wrapper around LilvPlugin/LilvInstance for running LV2 plugins
     Methods that are realtime/thread safe are excplicity documented as so.
     All other methods are NOT realtime safe */
@@ -51,9 +32,6 @@ public:
     
     /** Destructor */
     ~LV2Module();
-
-    /** Get the features passed during instantiation */
-    const LV2_Feature* const* getFeatures() const { return savedFeatures; }
     
     /** Get the total number of ports for this plugin */
     uint32 getNumPorts() const;
@@ -63,6 +41,9 @@ public:
 
     /** Get the plugin's Author/Manufacturer name */
     String getAuthorName() const;
+    
+    /** Get a channel configuration */
+    const ChannelConfig& getChannelConfig() const;
     
     /** Get the plugins class label (category) */
     String getClassLabel() const;
@@ -86,6 +67,9 @@ public:
     /** Get the LilvPort for this Module (by index) */
     const LilvPort* getPort (uint32 index) const;
     
+    /** Get a port's name */
+    const String getPortName (uint32 port) const;
+    
     /** Get a ports range (min, max and default value) */
     void getPortRange (uint32 port, float& min, float& max, float& def) const;
     
@@ -106,6 +90,7 @@ public:
     /** Returns true if the port is an Output */
     bool isPortOutput (uint32 port) const;
     
+    /** Set a control value */
     void setControlValue (uint32 port, float value);
     
     /** Set the sample rate for this plugin
@@ -122,9 +107,8 @@ public:
     
     /** Instantiate the Plugin
         @param samplerate The samplerate to use
-        @param features Features to pass to the plugin
         @note This is in the LV2 Instantiation Threading class */
-    Result instantiate (double samplerate, const LV2_Feature* const* features);
+    Result instantiate (double samplerate);
     
     /** Activate the plugin
         @note This is in the LV2 Instantiation Threading class */
@@ -155,20 +139,22 @@ public:
         @note This is in the LV2 Audio (realtime) Threading class */
     void connectPort (uint32 port, void* data);
 
+    /** Connect a channel to a data Location.  This simply converts the
+        channel number to a port index then calls LV2Module::connectPort
+        @note This is in the LV2 Audio (realtime) Threading class */
+    void connectChannel (const PortType type, const int32 channel, void* data, const bool isInput);
     
 private:
 
-    ScopedPointer<Lilv::Instance> instance;
-    Lilv::Plugin plugin;
+    LilvInstance* instance;
+    const LilvPlugin* plugin;
     LV2World&    world;
 
     bool active;
     double currentSampleRate;
     uint32 numPorts;
-    LV2_Feature** savedFeatures;
-    LV2_Worker_Interface *worker;
-
-    ScopedPointer<RingBuffer> hub, workResponses;
+    Array<const LV2_Feature*> features;
+    ScopedPointer<RingBuffer> events;
 
     Result allocateEventBuffers();
     void activatePorts();
@@ -176,33 +162,11 @@ private:
     void init();
 
     class Private;
-    ScopedPointer<Private> priv;
+    ScopedPointer<Private>   priv;
+    ScopedPointer<LV2Worker> worker;
     
     /** @internal */
     bool isLoaded() const;
-    
-    /** @internal */
-    inline LV2_Worker_Status
-    work (LV2_Worker_Respond_Function respond, uint32_t size, const void* data)
-    {
-        if (instance != nullptr && worker != nullptr)
-            return worker->work (getHandle(), respond, this, size, data);
-        return LV2_WORKER_ERR_UNKNOWN;
-    }
-    
-    /** @internal */
-    inline LV2_Worker_Status
-    writeWorkResponse (uint32 size, const void* data)
-    {
-        if (worker && workResponses)
-        {
-            workResponses->write ((const char*) &size, sizeof (uint32));
-            workResponses->write ((const char*) data, size);
-            return LV2_WORKER_SUCCESS;
-        }
-        
-        return LV2_WORKER_ERR_UNKNOWN;
-    }
 
 };
 

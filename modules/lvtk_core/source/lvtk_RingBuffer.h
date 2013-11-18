@@ -22,110 +22,87 @@ class RingBuffer
 
 public:
     
-    RingBuffer (uint32 capacity);
+    RingBuffer (int32 capacity);
     ~RingBuffer();
 
-    void setCapacity (uint32 newCapacity);
-
-    inline bool canRead  (uint32 bytes) const  { return bytes <= (uint32) fifo.getNumReady() && bytes != 0; }
+    void setCapacity (int32 newCapacity);
+    inline size_t size() const { return (size_t) fifo.getTotalSize(); }
+    
+    inline bool canRead  (uint32 bytes) const { return bytes <= (uint32) fifo.getNumReady() && bytes != 0; }
     inline uint32 getReadSpace() const { return fifo.getNumReady(); }
 
     inline bool canWrite (uint32 bytes) const { return bytes <= (uint32) fifo.getFreeSpace() && bytes != 0; }
     inline uint32 getWriteSpace() const { return (uint32) fifo.getFreeSpace(); }
 
-    inline uint32 size() const { return (uint32) fifo.getTotalSize(); }
-
     inline uint32
-    write (const char* src, uint32 bytes)
+    peak (void* dest, uint32 size)
+    {
+        return read (dest, size, false);
+    }
+    
+    inline uint32
+    read (void* dest, uint32 size, bool advance = true)
     {
         buffer = block.getData();
-                   
+        fifo.prepareToRead (size, vec1.index, vec1.size, vec2.index, vec2.size);
+        
+        if (vec1.size > 0)
+            memcpy (dest, buffer + vec1.index, vec1.size);
+        
+        if (vec2.size > 0)
+            memcpy ((uint8*) dest + vec1.size, buffer + vec2.index, vec2.size);
+        
+        if (advance)
+            fifo.finishedRead (vec1.size + vec2.size);
+        
+        return vec1.size + vec2.size;
+    }
+    
+    template <typename T>
+    inline uint32 read (T& dest)
+    {
+        return read (&dest, sizeof (T));
+    }
+    
+    inline uint32
+    write (const void* src, uint32 bytes)
+    {
+        buffer = block.getData();  
         fifo.prepareToWrite (bytes, vec1.index, vec1.size, vec2.index, vec2.size);
 
         if (vec1.size > 0)
             memcpy (buffer + vec1.index, src, vec1.size);
 
         if (vec2.size > 0)
-            memcpy (buffer + vec2.index, src + vec1.size, vec2.size);
+            memcpy (buffer + vec2.index, (uint8*)src + vec1.size, vec2.size);
 
         fifo.finishedWrite (vec1.size + vec2.size);
-
         return vec1.size + vec2.size;
     }
 
     template <typename T>
-    uint32 writeType (const T& src)
+    inline uint32 write (const T& src)
     {
         write (&src, sizeof (T));
     }
 
-    inline uint32
-    read (char* dest, uint32 size, bool advance = true)
-    {
-        buffer = block.getData();
-        
-        fifo.prepareToRead (size, vec1.index, vec1.size, vec2.index, vec2.size);
-
-        if (vec1.size > 0)
-            memcpy (dest, buffer + vec1.index, vec1.size);
-
-        if (vec2.size > 0)
-            memcpy (dest + vec1.size, buffer + vec2.index, vec2.size);
-
-        if (advance)
-            fifo.finishedRead (vec1.size + vec2.size);
-
-        return vec1.size + vec2.size;
-    }
-
     struct Vector {
-        uint32_t size;
-        void*    buffer;
+        uint32 size;
+        void*  buffer;
     };
     
-#if 0
-    void getReadVector (Vector* vec)
-    {
-        int i1, b1, i2, b2;
-        fifo.getReadVector (i1, b1, i2, b2);
-
-        char* buf = (char*) block.getData();
-
-        vec[0].size   = (uint32_t) b1;
-        vec[0].buffer = (void*) (buf + i1);
-        vec[1].size   = (uint32_t) b2;
-        vec[1].buffer = (void*) (buf + i2);
-    }
-
-    void getWriteVector (Vector* vec)
-    {
-        int i1, b1, i2, b2;
-        fifo.getWriteVector (i1, b1, i2, b2);
-
-        char* buf = (char*) block.getData();
-
-        vec[0].size   = (uint32_t) b1;
-        vec[0].buffer = (void*) (buf + i1);
-        vec[1].size   = (uint32_t) b2;
-        vec[1].buffer = (void*) (buf + i2);
-    }
-
-    void readAdvance (uint32_t bytes)  { fifo.finishedRead ((int) bytes); }
-    void writeAdvance (uint32_t bytes) { fifo.finishedWrite ((int) bytes); }
-#endif
-
 private:
     
     struct Vec
     {
-        int size;
-        int index;
+        int32 size;
+        int32 index;
     };
 
     Vec vec1, vec2;
-    juce::AbstractFifo fifo;
-    juce::HeapBlock<char> block;
-    char* buffer;
+    AbstractFifo fifo;
+    HeapBlock<uint8> block;
+    uint8* buffer;
     
 };
 

@@ -39,12 +39,16 @@ namespace juce {
 namespace lvtk {
 
 #include "features/lvtk_LV2Features.h"
+#include "features/lvtk_LV2Log.h"
+#include "features/lvtk_LV2Worker.h"
 #include "features/lvtk_SymbolMap.h"
-#include "host/lvtk_LV2Parameter.h"
+    
 #include "host/lvtk_LV2World.h"
+#include "host/lvtk_LV2Parameter.h"
+#include "host/lvtk_LV2PluginModel.h"
 #include "host/lvtk_LV2Module.h"
 #include "host/lvtk_LV2PluginFormat.h"
-    
+
 }}
 
 #endif
