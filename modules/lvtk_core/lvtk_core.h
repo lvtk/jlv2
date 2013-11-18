@@ -37,6 +37,7 @@
 
 #include <lv2/lv2plug.in/ns/lv2core/lv2.h>
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
+#include <lv2/lv2plug.in/ns/ext/atom/util.h>
 #include <lv2/lv2plug.in/ns/ext/event/event.h>
 #include <lv2/lv2plug.in/ns/ext/log/log.h>
 #include <lv2/lv2plug.in/ns/ext/morph/morph.h>
@@ -50,6 +51,7 @@
 namespace juce {
 namespace lvtk {
 
+#include "source/lvtk_AtomBuffer.h"
 #include "source/lvtk_Parameter.h"
 #include "source/lvtk_PortType.h"
 #include "source/lvtk_PortWriter.h"

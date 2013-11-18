@@ -63,6 +63,14 @@ LV2World::createModule (const String& uri)
     return nullptr;
 }
 
+LV2PluginModel*
+LV2World::createPluginModel (const String& uri)
+{
+    if (const LilvPlugin* plugin = getPlugin (uri))
+        return new LV2PluginModel (*this, plugin);
+    return nullptr;
+}
+
 const LilvPlugin*
 LV2World::getPlugin (const String& uri) const
 {

@@ -359,12 +359,14 @@ public:
 
     Internal()
     {
+        useExternalData = false;
         world.setOwned (new LV2World ());
         init();
     }
     
     Internal (LV2World& w)
     {
+        useExternalData = true;
         world.setNonOwned (&w);
         init();
     }
@@ -374,15 +376,24 @@ public:
         world.clear();
     }
     
-    LV2Module* createModule (const String& uri)
+    LV2PluginModel*
+    createModel (const String& uri)
+    {
+        return world->createPluginModel (uri);
+    }
+    
+    LV2Module*
+    createModule (const String& uri)
     {
         return world->createModule (uri);
     }
 
     OptionalScopedPointer<LV2World> world;
-    SymbolMap       symbols;
+    SymbolMap symbols;
     
 private:
+    
+    bool useExternalData;
     
     void init()
     {
@@ -390,30 +401,17 @@ private:
     }
     
     void createProvidedFeatures()
-    {
+    {        
         world->addFeature (symbols.createMapFeature(), false);
-        world->addFeature (symbols.createUnmapFeature(), true);
-        
-       #if LV2_LOGGING
-        world->getFeatures().listFeatures();
-       #endif
+        world->addFeature (symbols.createUnmapFeature(), false);
+        world->addFeature (new LV2Log(), true);
     }
     
 };
 
-LV2PluginFormat::LV2PluginFormat()
-{
-    priv = new LV2PluginFormat::Internal();
-}
-
-LV2PluginFormat::LV2PluginFormat (LV2World& w)
-{
-    priv = new LV2PluginFormat::Internal (w);
-}
-
+LV2PluginFormat::LV2PluginFormat() : priv (new Internal()) { }
+LV2PluginFormat::LV2PluginFormat (LV2World& w) : priv (new Internal (w)) { }
 LV2PluginFormat::~LV2PluginFormat() { priv = nullptr; }
-
-SymbolMap& LV2PluginFormat::getSymbolMap() { return priv->symbols; }
 
 void
 LV2PluginFormat::findAllTypesForFile (OwnedArray <PluginDescription>& results,
@@ -493,12 +491,12 @@ StringArray
 LV2PluginFormat::searchPathsForPlugins (const FileSearchPath&, bool)
 {
     StringArray list;
-    Lilv::Plugins plugins (priv->world->getAllPlugins());
+    const LilvPlugins* plugins (priv->world->getAllPlugins());
 
     LILV_FOREACH (plugins, iter, plugins)
     {
-        Lilv::Plugin plugin (plugins.get (iter));
-        String uri (plugin.get_uri().as_string());
+        const LilvPlugin* plugin = lilv_plugins_get (plugins, iter);
+        const String uri = CharPointer_UTF8 (lilv_node_as_uri (lilv_plugin_get_uri (plugin)));
         if (priv->world->isPluginSupported (uri))
             list.add (uri);
     }
@@ -511,7 +509,9 @@ FileSearchPath LV2PluginFormat::getDefaultLocationsToSearch() { return FileSearc
 bool
 LV2PluginFormat::doesPluginStillExist (const PluginDescription& desc)
 {
-    FileSearchPath placeholder;
-    StringArray plugins (searchPathsForPlugins (placeholder, true));
+    StringArray plugins (searchPathsForPlugins (FileSearchPath(), true));
     return plugins.contains (desc.fileOrIdentifier);
 }
+
+
+SymbolMap& LV2PluginFormat::getSymbolMap() { return priv->symbols; }

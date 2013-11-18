@@ -21,6 +21,7 @@
 namespace juce {
 namespace lvtk {
     
+#include "source/lvtk_AtomBuffer.cpp"
 #include "source/lvtk_PortWriter.cpp"
 #include "source/lvtk_RingBuffer.cpp"
 #include "source/lvtk_WorkThread.cpp"
