@@ -63,7 +63,8 @@ public:
     
     /** Returns true if the plugin is supported on this system */
     bool isPluginSupported (const String& uri);
-
+    bool isPluginSupported (const LilvPlugin* plugin);
+    
     /** Return the underlying LilvWorld* pointer */
     inline LilvWorld* getWorld() const { return world; }
 

@@ -65,6 +65,21 @@ private:
     void run();
 };
 
+/** A flag that indicates whether work is happening or not */
+class WorkFlag {
+public:
+    
+    WorkFlag() { flag = 0; }
+    inline bool isWorking() const { return flag.get() != 0; }
+    
+private:
+    
+    Atomic<int32> flag;
+    inline bool setWorking (bool status) { return flag.compareAndSetBool (status ? 1 : 0, status ? 0 : 1); }
+    friend class WorkThread;
+    
+};
+
 
 class Worker
 {
@@ -75,6 +90,9 @@ public:
         @param bufsize Size to use for internal response buffers */
     Worker (WorkThread& thread, uint32 bufsize);
     virtual ~Worker();
+    
+    /** Returns true if the worker is currently working */
+    inline bool isWorking() const { return flag.isWorking(); }
     
     /** Schedule work (realtime thread).
         Work will be scheduled, and the thread will call Worker::processRequest
@@ -103,7 +121,7 @@ private:
     
     WorkThread& owner;
     uint32 workId;                       ///< The thread assigned id for this worker
-    Atomic<int> working;
+    WorkFlag flag;                       ///< A flag for when work is being processed
     
     ScopedPointer<RingBuffer> responses; ///< responses from work
     HeapBlock<uint8>          response;  ///< buffer to write a response

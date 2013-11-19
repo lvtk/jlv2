@@ -123,46 +123,33 @@ LV2World::isPluginAvailable (const String& uri)
 bool
 LV2World::isPluginSupported (const String& uri)
 {
-    const LilvPlugin * plugin = getPlugin (uri);
-    if (plugin == nullptr)
-        return false;
-    
+    if (const LilvPlugin * plugin = getPlugin (uri))
+        return isPluginSupported (plugin);
+    return false;
+}
+
+bool
+LV2World::isPluginSupported (const LilvPlugin* plugin)
+{
+    // Required features support
+    LilvNodes* nodes = lilv_plugin_get_required_features (plugin);
+    LILV_FOREACH (nodes, iter, nodes)
     {
-        // Required features support
-        LilvNodes* nodes = lilv_plugin_get_required_features (plugin);
-        LILV_FOREACH (nodes, iter, nodes)
-        {
-            const LilvNode* node (lilv_nodes_get (nodes, iter));
-            if (! isFeatureSupported (CharPointer_UTF8 (lilv_node_as_uri (node)))) {
-                return false; // Feature not supported
-            }
+        const LilvNode* node (lilv_nodes_get (nodes, iter));
+        if (! isFeatureSupported (CharPointer_UTF8 (lilv_node_as_uri (node)))) {
+            return false; // Feature not supported
         }
-        lilv_nodes_free (nodes);
     }
-    
-#if 0
-    {
-        // Required features support
-        LilvNodes* nodes = lilv_plugin_get_extension_data (plugin);
-        LILV_FOREACH (nodes, iter, nodes)
-        {
-            const LilvNode* node (lilv_nodes_get (nodes, iter));
-            Logger::writeToLog ("extension data: " + String (CharPointer_UTF8 (lilv_node_as_uri (node))));
-        }
-        lilv_nodes_free (nodes);
-    }
-#endif
+    lilv_nodes_free (nodes); nodes = nullptr;
     
     
     // Check this plugin's port types are supported
     const uint32 numPorts = lilv_plugin_get_num_ports (plugin);
     for (uint32 i = 0; i < numPorts; ++i)
     {
-       const LilvPort* port (lilv_plugin_get_port_by_index (plugin, i));
-       if (lilv_port_is_a (plugin, port, lv2_CVPort) ||
-           lilv_port_is_a (plugin, port, lv2_EventPort))
-          return false;
+        // const LilvPort* port (lilv_plugin_get_port_by_index (plugin, i));
+        // nothing here yet (or ever)
     }
-
+    
     return true;
 }

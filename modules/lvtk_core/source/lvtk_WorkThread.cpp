@@ -117,14 +117,11 @@ WorkThread::run()
         LVTK_WORKER_LOG (getThreadName() + ": Finding Worker ID " + String (workId));
         
         {
-            ScopedLock lock (workers.getLock());
             if (Worker* const worker = getWorker (workId))
             {
-                while (! worker->working.compareAndSetBool (1, 0)) { }
-                LVTK_WORKER_LOG("Atomic Flag Set to: " + String(worker->working.get()));
+                while (! worker->flag.setWorking (true)) {}
                 worker->processRequest (size, buffer.getData());
-                while (! worker->working.compareAndSetBool (0, 1)) { }
-                LVTK_WORKER_LOG("Atomic Flag Set to: " + String(worker->working.get()));
+                while (! worker->flag.setWorking (false)) {}
             }
         }
         
@@ -168,7 +165,6 @@ WorkThread::validateMessage (RingBuffer& ring)
 Worker::Worker (WorkThread& thread, uint32 bufsize)
     : owner (thread)
 {
-    working.set (0);
     responses = new RingBuffer (bufsize);
     response.calloc (bufsize);
     thread.registerWorker (this);
@@ -176,15 +172,11 @@ Worker::Worker (WorkThread& thread, uint32 bufsize)
 
 Worker::~Worker()
 {
-    LVTK_WORKER_LOG ("Worker delete: working = " + String (working.get()));
-    
-    while (working.get() != 0) {
-        LVTK_WORKER_LOG ("Waiting for work to finish...");
-        Thread::sleep (200);
+    while (flag.isWorking()) {
+        Thread::sleep (100);
     }
     
     owner.removeWorker (this);
-    
     responses = nullptr;
     response.free();
 }

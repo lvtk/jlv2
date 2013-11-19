@@ -404,6 +404,7 @@ private:
     {        
         world->addFeature (symbols.createMapFeature(), false);
         world->addFeature (symbols.createUnmapFeature(), false);
+        world->addFeature (symbols.createLegacyMapFeature(), false);
         world->addFeature (new LV2Log(), true);
     }
     
@@ -484,6 +485,13 @@ LV2PluginFormat::fileMightContainThisPluginType (const String& fileOrIdentifier)
 String
 LV2PluginFormat::getNameOfPluginFromIdentifier (const String& fileOrIdentifier)
 {
+    if (const LilvPlugin* plugin = priv->world->getPlugin (fileOrIdentifier))
+    {
+        LilvNode* node = lilv_plugin_get_name (plugin);
+        const String name = CharPointer_UTF8 (lilv_node_as_string (node));
+        lilv_node_free (node);
+    }
+    
     return fileOrIdentifier;
 }
 

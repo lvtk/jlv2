@@ -101,11 +101,15 @@ public:
     
     /** Create a URID Map LV2Feature. Thie created feature MUST be deleted
         before the SymbolMap is deleted */
-    inline LV2Feature*  createMapFeature()   { return new MapFeature (this); }
+    inline LV2Feature*  createMapFeature() { return new MapFeature (this); }
 
     /** Create a URID Unmap LV2Feature. Thie created feature MUST be deleted
         before the SymbolMap is deleted */
     inline LV2Feature*  createUnmapFeature() { return new UnmapFeature (this); }
+    
+    /** Create a (deprecated) URI Map feature. Thie created feature MUST be deleted
+        before the SymbolMap is deleted */
+    inline LV2Feature*  createLegacyMapFeature() { return new URIMapFeature (this); }
 
 private:
     typedef std::map<std::string, LV2_URID> Mapped;
@@ -179,6 +183,45 @@ private:
 
         friend class SymbolMap;
     };
+    
+    /** Implements the deprecated URI_Map feature */
+    class URIMapFeature : public LV2Feature
+    {
+    public:
+        
+        inline static uint32_t
+        uriToId (LV2_URI_Map_Callback_Data handle, const char* a, const char* b)
+        {
+            SymbolMap* sym = (SymbolMap*) handle;
+            if (a != nullptr)
+                { /* do nothing i suppose */ }
+            
+            return sym->map (b);
+        }
+        
+        URIMapFeature (SymbolMap* parent)
+        {
+            uri = LV2_URI_MAP_URI;
+            feat.URI           = uri.toRawUTF8();
+            data.callback_data = (void*) parent;
+            data.uri_to_id     = &URIMapFeature::uriToId;
+            feat.data          = &data;
+        }
+        
+        ~URIMapFeature() { }
+        
+        const String& getURI() const { return uri; }
+        const LV2_Feature* getFeature() const { return &feat; }
+        
+    private:
+        
+        String         uri;
+        LV2_Feature    feat;
+        LV2_URI_Map_Feature  data;
+        
+        friend class SymbolMap;
+    };
+    
 };
 
 #endif /* LVTK_JUCE_SYMMAP_H */
