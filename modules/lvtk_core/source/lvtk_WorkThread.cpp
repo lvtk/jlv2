@@ -230,6 +230,13 @@ Worker::validateMessage (RingBuffer& ring)
     return ring.canRead (size + sizeof(size));
 }
 
+void
+Worker::setSize (uint32 newSize)
+{
+    responses = new RingBuffer (newSize);
+    response.realloc (newSize);
+}
+
 #if 0
 
 namespace element {

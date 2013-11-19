@@ -109,6 +109,9 @@ public:
         response, Worker::processResponse will be called */
     void processWorkResponses();
     
+    /** Set the internal buffer size for responses */
+    void setSize (uint32 newSize);
+    
 protected:
     
     /** Process work (worker thread) */
