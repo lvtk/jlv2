@@ -163,19 +163,18 @@ LV2Module::instantiate (double samplerate)
     {
         const LilvNode* node = lilv_nodes_get (nodes, iter);
         if (lilv_node_equals (node, world.work_interface))
+        {
             worker = new LV2Worker (world.getWorkThread(), 1);
+            features.add (worker->getFeature());
+        }
     }
-    lilv_nodes_free (nodes); nodes = nullptr;
-    
-    if (worker)
-        features.add (worker->getFeature());
+    lilv_nodes_free (nodes); nodes = nullptr;        
     
     features.add (nullptr);
-    
     instance = lilv_plugin_instantiate (plugin, samplerate,
                                         features.getRawDataPointer());
     if (instance == nullptr) {
-        features.removeFirstMatchingValue (worker->getFeature());
+        features.clearQuick();
         worker = nullptr;
         return Result::fail ("Could not instantiate plugin.");
     }
@@ -185,7 +184,7 @@ LV2Module::instantiate (double samplerate)
         assert (worker != nullptr);
         worker->setSize (2048);
         worker->setInterface (lilv_instance_get_handle (instance),
-                               (LV2_Worker_Interface*) data);
+                              (LV2_Worker_Interface*) data);
     }
     else if (worker)
     {
