@@ -71,6 +71,28 @@ LV2World::createPluginModel (const String& uri)
     return nullptr;
 }
 
+void
+LV2World::fillPluginDescription (const String& uri, PluginDescription& desc) const
+{
+    if (const LilvPlugin* plugin = getPlugin (uri))
+    {
+        LV2PluginModel model (*const_cast<LV2World*> (this), plugin);
+        desc.category = model.getClassLabel();
+        desc.descriptiveName = String::empty;
+        desc.fileOrIdentifier = uri;
+        desc.hasSharedContainer = false;
+        desc.isInstrument = model.getMidiPort() != LV2UI_INVALID_PORT_INDEX;
+        desc.lastFileModTime = Time();
+        desc.manufacturerName = model.getAuthorName();
+        desc.name = model.getName();
+        desc.numInputChannels  = model.getNumPorts (PortType::Audio, true);
+        desc.numOutputChannels = model.getNumPorts (PortType::Audio, false);
+        desc.pluginFormatName = String ("LV2");
+        desc.uid = desc.fileOrIdentifier.hashCode();
+        desc.version = String::empty;
+    }
+}
+
 const LilvPlugin*
 LV2World::getPlugin (const String& uri) const
 {

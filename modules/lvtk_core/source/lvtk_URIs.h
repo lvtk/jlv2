@@ -12,18 +12,27 @@
     DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
     IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- */
+*/
 
+#ifndef LVTK_JUCE_URIS_H
+#define LVTK_JUCE_URIS_H
 
-#include "AppConfig.h"
-#include "lvtk_core.h"
-
-namespace juce {
-namespace lvtk {
+class URIs
+{
+public:
     
-#include "source/lvtk_PortBuffer.cpp"
-#include "source/lvtk_PortWriter.cpp"
-#include "source/lvtk_RingBuffer.cpp"
-#include "source/lvtk_WorkThread.cpp"
+    URIs (LV2_URID_Map* map)
+        : atom_Float    (map->map (map->handle, LV2_ATOM__Float)),
+          atom_Sequence (map->map (map->handle, LV2_ATOM__Sequence)),
+          atom_Sound    (map->map (map->handle, LV2_ATOM__Sound)),
+          event_Event   (map->map (map->handle, LV2_EVENT__Event))
+    { }
     
-}}
+    const LV2_URID atom_Float;
+    const LV2_URID atom_Sequence;
+    const LV2_URID atom_Sound;
+    const LV2_URID event_Event;
+    
+};
+
+#endif

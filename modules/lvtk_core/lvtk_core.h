@@ -52,9 +52,10 @@
 namespace juce {
 namespace lvtk {
 
-#include "source/lvtk_AtomBuffer.h"
-#include "source/lvtk_Parameter.h"
+#include "source/lvtk_URIs.h"
 #include "source/lvtk_PortType.h"
+#include "source/lvtk_PortBuffer.h"
+#include "source/lvtk_Parameter.h"
 #include "source/lvtk_PortWriter.h"
 #include "source/lvtk_RingBuffer.h"
 #include "source/lvtk_Semaphore.h"

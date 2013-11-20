@@ -17,7 +17,7 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-// Change this to disable logging of various LV2 activities
+// Change this to enable logging of various LV2 activities
 #ifndef LV2_LOGGING
  #define LV2_LOGGING 0
 #endif
@@ -33,6 +33,7 @@
 #define LVTK_JUCE_PLUGIN_INSTANCE_CLASS AudioPluginInstance
 #endif
 
+static ScopedPointer<URIs> uris;
 
 //==============================================================================
 class LV2PluginInstance     : public LVTK_JUCE_PLUGIN_INSTANCE_CLASS
@@ -46,12 +47,27 @@ public:
           tempBuffer (1, 1),
           module (module_)
     {
+        LV2_URID_Map* map = nullptr;
+        if (LV2Feature* feat = world.getFeatureArray().getFeature (LV2_URID__map))
+            map = (LV2_URID_Map*) feat->getFeature()->data;
+        
+        assert (map != nullptr);
         assert (module != nullptr);
 
+        if (uris == nullptr)
+            uris = new URIs (map);
+                             
+        atomSequence = map->map (map->handle, LV2_ATOM__Sequence);
+        midiEvent    = map->map (map->handle, LV2_MIDI__MidiEvent);
+        
         numPorts   = module->getNumPorts();
         midiPort   = module->getMidiPort();
-        notifyPort = LV2UI_INVALID_PORT_INDEX;
+        notifyPort = module->getNotifyPort();
 
+        buffers.ensureStorageAllocated (numPorts);
+        while (buffers.size() < numPorts)
+            buffers.add (nullptr);
+        
         // TODO: channel/param mapping should all go in LV2Module
         const LilvPlugin* plugin (module->getPlugin());
         for (uint32 p = 0; p < numPorts; ++p)
@@ -59,10 +75,15 @@ public:
             const LilvPort* port (module->getPort (p));
             const bool input = module->isPortInput (p);
             const PortType type = module->getPortType (p);
-   
+            
             if (input)
             {
-                if (PortType::Control == type)
+                if (PortType::Atom == type)
+                {
+                    buffers.set (p, new PortBuffer (uris, uris->atom_Sequence, 4096));
+                    module->connectPort (p, buffers.getUnchecked(p)->getPortData());
+                }
+                else if (PortType::Control == type)
                 {
                     LV2Parameter* param = new LV2Parameter (plugin, port);
                     params.add (param);
@@ -71,10 +92,28 @@ public:
                     module->getPortRange (p, min, max, def);
                     param->setMinMaxValue (min, max, def);
                 }
+                else if (PortType::Event == type)
+                {
+                    buffers.set (p, new PortBuffer (uris, uris->event_Event, 4096));
+                    module->connectPort (p, buffers.getUnchecked(p)->getPortData());
+                }
             }
             else
             {
-               
+                if (PortType::Atom == type)
+                {
+                    buffers.set (p, new PortBuffer (uris, uris->atom_Sequence, 4096));
+                    module->connectPort (p, buffers.getUnchecked(p)->getPortData());
+                }
+                else if (PortType::Control == type)
+                {
+                
+                }
+                else if (PortType::Event == type)
+                {
+                    buffers.set (p, new PortBuffer (uris, uris->event_Event, 4096));
+                    module->connectPort (p, buffers.getUnchecked(p)->getPortData());
+                }
             }
             
         }
@@ -118,7 +157,7 @@ public:
 
         desc.numInputChannels  = module->getNumPorts (PortType::Audio, true);
         desc.numOutputChannels = module->getNumPorts (PortType::Audio, false);
-        desc.isInstrument = false; //XXXX
+        desc.isInstrument = module->getMidiPort() != LV2UI_INVALID_PORT_INDEX;
     }
 
     void initialise()
@@ -197,6 +236,25 @@ public:
         }
         
         const ChannelConfig& chans (module->getChannelConfig());
+        
+        for (PortBuffer* buf : buffers) {
+            if (buf)
+                buf->clear();
+        }
+        
+        if (wantsMidiMessages)
+        {
+            PortBuffer* const buf = buffers.getUnchecked (midiPort);
+            jassert (buf != nullptr);
+            
+            MidiBuffer::Iterator iter (midi);
+            const uint8* d;  int s = 0, f = 0;
+            
+            while (iter.getNextEvent (d, s, f))
+            {
+                buf->addEvent (f, (uint32)s, midiEvent, d);
+            }
+        }
         
         for (int32 i = getNumInputChannels(); --i >= 0;)
             module->connectPort (chans.getAudioInputPort(i), audio.getSampleData (i));
@@ -342,12 +400,12 @@ private:
     AudioSampleBuffer tempBuffer;
     ScopedPointer<LV2Module> module;
     OwnedArray<LV2Parameter> params;
+    OwnedArray<PortBuffer> buffers;
 
     uint32 numPorts;
     uint32 midiPort;
     uint32 notifyPort;
-
-    const char* getCategory() const { return module->getClassLabel().toUTF8(); }
+    uint32 atomSequence, midiEvent;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LV2PluginInstance)
 };
@@ -422,6 +480,11 @@ LV2PluginFormat::findAllTypesForFile (OwnedArray <PluginDescription>& results,
         return;
 
     ScopedPointer<PluginDescription> desc (new PluginDescription());
+    
+#if 0
+    priv->world->fillPluginDescription (fileOrIdentifier, *desc);
+    results.add (desc.release());
+#else
     desc->fileOrIdentifier = fileOrIdentifier;
     desc->pluginFormatName = String ("LV2");
     desc->uid = 0;
@@ -437,8 +500,10 @@ LV2PluginFormat::findAllTypesForFile (OwnedArray <PluginDescription>& results,
     }
     catch (...)
     {
+        Logger::writeToLog ("crashed: " + String (desc->name));
         // crashed while loading...
     }
+#endif
 }
 
 AudioPluginInstance*
@@ -500,7 +565,6 @@ LV2PluginFormat::searchPathsForPlugins (const FileSearchPath&, bool)
 {
     StringArray list;
     const LilvPlugins* plugins (priv->world->getAllPlugins());
-
     LILV_FOREACH (plugins, iter, plugins)
     {
         const LilvPlugin* plugin = lilv_plugins_get (plugins, iter);

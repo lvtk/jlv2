@@ -49,6 +49,9 @@ public:
     /** Create a plugin model for a uri string */
     LV2PluginModel* createPluginModel (const String& uri);
     
+    /** Fill a PluginDescription for a plugin uri */
+    void fillPluginDescription (const String& uri, PluginDescription& desc) const;
+    
     /** Get an LilvPlugin for a uri string */
     const LilvPlugin* getPlugin (const String& uri) const;
     

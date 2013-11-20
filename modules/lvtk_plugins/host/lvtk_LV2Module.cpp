@@ -370,7 +370,7 @@ LV2Module::getMidiPort() const
    for (uint32 i = 0; i < getNumPorts(); ++i)
    {
        const LilvPort* port (getPort (i));
-       if (lilv_port_is_a (plugin, port, world.lv2_AtomPort) &&
+       if ((lilv_port_is_a (plugin, port, world.lv2_AtomPort) || lilv_port_is_a (plugin, port, world.lv2_EventPort))&&
            lilv_port_is_a (plugin, port, world.lv2_InputPort) &&
            lilv_port_supports_event (plugin, port, world.midi_MidiEvent))
            return i;
@@ -437,7 +437,7 @@ LV2Module::getPortType (uint32 i) const
    else if (lilv_port_is_a (plugin, port, world.lv2_CVPort))
        return PortType::CV;
    else if (lilv_port_is_a (plugin, port, world.lv2_EventPort))
-       { jassertfalse; /* XXX Handle (deprecated) event ports */ }
+       return PortType::Event;
 
    return PortType::Unknown;
 }
