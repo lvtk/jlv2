@@ -21,6 +21,18 @@ PortBuffer::PortBuffer (const URIs* ids, uint32 bufferType, uint32 bufferSize)
     {
         buffer.event = (LV2_Event_Buffer*) block.getData();
     }
+    else
+    {
+        // trying to use an unsupported buffer type
+        jassertfalse;
+    }
+        
+	if (type == uris->atom_Sound)
+    {
+		LV2_Atom_Vector* vec = (LV2_Atom_Vector*) buffer.atom;
+		vec->body.child_size = sizeof (float);
+		vec->body.child_type = uris->atom_Float;
+	}
     
     reset();
 }
@@ -53,19 +65,18 @@ PortBuffer::addEvent (int64 frames, uint32 size, uint32 type, const uint8* data)
     }
     else if (isEvent())
     {
-        LV2_Event_Buffer* ebuf = buffer.event;
-        if (ebuf->capacity - ebuf->size < sizeof(LV2_Event) + size)
+        if (buffer.event->capacity - buffer.event->size < sizeof(LV2_Event) + size)
             return false;
         
-        LV2_Event* ev = (LV2_Event*)(ebuf->data + ebuf->size);
+        LV2_Event* ev = (LV2_Event*)(buffer.event->data + buffer.event->size);
         ev->frames    = frames;
         ev->subframes = 0;
         ev->type      = type;
         ev->size      = size;
         memcpy ((uint8*)ev + sizeof(LV2_Event), data, size);
         
-        ebuf->size        += portBufferPadSize (sizeof (LV2_Event) + size);
-        ebuf->event_count += 1;
+        buffer.event->size        += portBufferPadSize (sizeof (LV2_Event) + size);
+        buffer.event->event_count += 1;
         return true;
     }
     
