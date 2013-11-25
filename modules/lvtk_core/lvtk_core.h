@@ -19,17 +19,17 @@
 
 #ifndef JUCE_MODULE_AVAILABLE_lvtk_core
  #ifdef _MSC_VER
-  #pragma message ("Have you included your AppConfig.h file before including the JUCE headers?")
+  #pragma message ("Have you included your AppConfig.h file before including JUCE headers?")
  #else
-  #warning "Have you included your AppConfig.h file before including the JUCE headers?"
+  #warning "Have you included your AppConfig.h file before including JUCE headers?"
  #endif
 #endif
 
 /** Config: LVTK_USE_CXX11
-    Set this if to enable C++ 11 language features.  The default is disabled.
+    Set this if to enable C++ 11 language features.  The default is enabled.
  */
 #ifndef LVTK_USE_CXX11
- #define LVTK_USE_CXX11 0
+ #define LVTK_USE_CXX11 1
 #endif
 
 #include <functional>
@@ -47,7 +47,7 @@
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 #include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
 
-#include "juce_core/juce_core.h"
+#include "modules/juce_core/juce_core.h"
 
 namespace juce {
 namespace lvtk {

@@ -214,7 +214,7 @@ Semaphore::wait()
 }
 
 inline bool
-Semaphore::try_wait()
+Semaphore::tryWait()
 {
   return (sem_trywait (&semaphore) == 0);
 }

@@ -22,13 +22,13 @@
 
 #ifndef JUCE_MODULE_AVAILABLE_lvtk_plugins
 #ifdef _MSC_VER
-#pragma message ("Have you included your AppConfig.h file before including the JUCE headers?")
+ #pragma message ("Have you included your AppConfig.h file before including JUCE headers?")
 #else
-#warning "Have you included your AppConfig.h file before including the JUCE headers?"
+ #warning "Have you included your AppConfig.h file before including JUCE headers?"
 #endif
 #endif
 
-#include "juce_audio_processors/juce_audio_processors.h"
+#include "modules/juce_audio_processors/juce_audio_processors.h"
 #include "../lvtk_core/lvtk_core.h"
 
 #include <lilv/lilvmm.hpp>
