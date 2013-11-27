@@ -22,16 +22,18 @@ class URIs
 public:
     
     URIs (LV2_URID_Map* map)
-        : atom_Float    (map->map (map->handle, LV2_ATOM__Float)),
-          atom_Sequence (map->map (map->handle, LV2_ATOM__Sequence)),
-          atom_Sound    (map->map (map->handle, LV2_ATOM__Sound)),
-          event_Event   (map->map (map->handle, LV2_EVENT__Event))
+        : atom_Float     (map->map (map->handle, LV2_ATOM__Float)),
+          atom_Sequence  (map->map (map->handle, LV2_ATOM__Sequence)),
+          atom_Sound     (map->map (map->handle, LV2_ATOM__Sound)),
+          event_Event    (map->map (map->handle, LV2_EVENT__Event)),
+          midi_MidiEvent (map->map (map->handle, LV2_MIDI__MidiEvent))
     { }
     
     const LV2_URID atom_Float;
     const LV2_URID atom_Sequence;
     const LV2_URID atom_Sound;
     const LV2_URID event_Event;
+    const LV2_URID midi_MidiEvent;
     
 };
 

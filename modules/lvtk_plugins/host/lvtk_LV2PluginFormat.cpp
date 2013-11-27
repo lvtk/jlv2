@@ -266,6 +266,26 @@ public:
 
         for (int32 i = getNumOutputChannels(); --i >= 0;)
             audio.copyFrom (i, 0, tempBuffer.getSampleData (i), numSamples);
+        
+        if (notifyPort != LV2UI_INVALID_PORT_INDEX)
+        {
+            PortBuffer* const buf = buffers.getUnchecked (notifyPort);
+            jassert (buf != nullptr);
+            
+            midi.clear();
+            LV2_ATOM_SEQUENCE_FOREACH ((LV2_Atom_Sequence*) buf->getPortData(), ev)
+            {
+                if (ev->body.type == uris->midi_MidiEvent)
+                {
+                    midi.addEvent (LV2_ATOM_BODY_CONST (&ev->body),
+                                   ev->body.size, (int32)ev->time.frames);
+                }
+            }
+        }
+        else
+        {
+            midi.clear();
+        }
     }
 
     //==============================================================================
