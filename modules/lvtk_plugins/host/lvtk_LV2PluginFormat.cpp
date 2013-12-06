@@ -28,15 +28,10 @@
  #define JUCE_LV2_LOG(a)
 #endif
 
-
-#ifndef LVTK_JUCE_PLUGIN_INSTANCE_CLASS
-#define LVTK_JUCE_PLUGIN_INSTANCE_CLASS AudioPluginInstance
-#endif
-
 static ScopedPointer<URIs> uris;
 
 //==============================================================================
-class LV2PluginInstance     : public LVTK_JUCE_PLUGIN_INSTANCE_CLASS
+class LV2PluginInstance     : public PortProcessor
 {
 public:
 
@@ -80,8 +75,11 @@ public:
             {
                 if (PortType::Atom == type)
                 {
-                    buffers.set (p, new PortBuffer (uris, uris->atom_Sequence, 4096));
-                    module->connectPort (p, buffers.getUnchecked(p)->getPortData());
+                    PortBuffer* buf = new PortBuffer (uris, uris->atom_Sequence, 4096);
+                    buffers.set (p, buf);
+                    assert (buf->getPortData() != nullptr);
+                    module->connectPort (p, buf->getPortData());
+                    
                 }
                 else if (PortType::Control == type)
                 {
@@ -135,7 +133,13 @@ public:
     PortType getPortType (uint32 port) const { return module->getPortType (port); }
     bool isPortInput (uint32 port)     const { return module->isPortInput (port); }
     bool isPortOutput (uint32 port)    const { return module->isPortOutput (port); }
-
+    bool writeToPort (uint32 port, uint32 size, uint32 protocol, const void* data)
+    {
+        const PortEvent ev = { port, protocol, (double)4.0, size };
+        Logger::writeToLog ("Write: time: " + String(ev.time.decimal) + String(" frames: ") + String(ev.time.frames));
+        return true;
+    }
+    
     //=========================================================================
     void fillInPluginDescription (PluginDescription& desc) const
     {
@@ -245,13 +249,11 @@ public:
         if (wantsMidiMessages)
         {
             PortBuffer* const buf = buffers.getUnchecked (midiPort);
-            jassert (buf != nullptr);
             
             MidiBuffer::Iterator iter (midi);
-            const uint8* d;  int s = 0, f = 0;
-            
-            while (iter.getNextEvent (d, s, f))
-            {
+            const uint8* d = nullptr;  int s = 0, f = 0;
+
+            while (iter.getNextEvent (d, s, f)) {
                 buf->addEvent (f, (uint32)s, midiEvent, d);
             }
         }
@@ -357,6 +359,7 @@ public:
             LV2Parameter* const param = params.getUnchecked (index);
             param->setNormalValue (newValue);
             module->setControlValue (param->getPortIndex(), param->getValue());
+            writeControlValue (param->getPortIndex(), param->getValue());
         }
     }
 

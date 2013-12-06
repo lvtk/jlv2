@@ -44,6 +44,7 @@ namespace lvtk {
 #include "features/lvtk_SymbolMap.h"
     
 #include "host/lvtk_LV2World.h"
+#include "host/lvtk_PortProcessor.h"
 #include "host/lvtk_LV2Parameter.h"
 #include "host/lvtk_LV2PluginModel.h"
 #include "host/lvtk_LV2Module.h"
