@@ -31,7 +31,6 @@
 #include "modules/juce_audio_processors/juce_audio_processors.h"
 #include "../lvtk_core/lvtk_core.h"
 
-#include <lilv/lilvmm.hpp>
 #include <lilv/lilv.h>
 #include <suil/suil.h>
 
