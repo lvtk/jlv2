@@ -6,7 +6,7 @@
   "website":        "http://lvtoolkit.org",
   "license":        "GPL",
 
-  "dependencies":   [ { "id": "juce_audio_processors", "version": "2.1.8" },
+  "dependencies":   [ { "id": "juce_audio_processors", "version": "3.0.0" },
                       { "id": "lvtk_core", "version": "matching" } ], 
 
   "include":        "lvtk_plugins.h",
