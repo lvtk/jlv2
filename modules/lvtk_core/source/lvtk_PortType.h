@@ -17,8 +17,7 @@
 #ifndef LVTK_JUCE_PORTTYPE_H
 #define LVTK_JUCE_PORTTYPE_H
 
-/** The type of a port. This is intended to be used when working with LV2 plugins but
-    could be used to represent ports for non-LV2 'things' */
+/** The type of a port. */
 class PortType {
 public:
 
