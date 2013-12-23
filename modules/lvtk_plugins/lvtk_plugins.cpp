@@ -20,7 +20,6 @@
 #include "AppConfig.h"
 #include "lvtk_plugins.h"
 
-namespace juce {
 namespace lvtk {
 
 #include "host/lvtk_LV2Module.cpp"
@@ -32,4 +31,4 @@ namespace lvtk {
 #include "features/lvtk_LV2Log.cpp"
 #include "features/lvtk_LV2Worker.cpp"
     
-}}
+}

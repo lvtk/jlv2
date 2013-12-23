@@ -49,9 +49,13 @@
 
 #include "modules/juce_core/juce_core.h"
 
-namespace juce {
+#ifndef LVTK_JUCE_NAMESPACE
+#define LVTK_JUCE_NAMESPACE juce
+#endif
+
 namespace lvtk {
-    
+using namespace LVTK_JUCE_NAMESPACE;
+
 #include "source/lvtk_URIs.h"
 #include "source/lvtk_PortType.h"
 #include "source/lvtk_PortBuffer.h"
@@ -61,6 +65,6 @@ namespace lvtk {
 #include "source/lvtk_Semaphore.h"
 #include "source/lvtk_WorkThread.h"
 
-}}
+}
 
 #endif

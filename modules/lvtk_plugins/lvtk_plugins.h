@@ -34,7 +34,6 @@
 #include <lilv/lilv.h>
 #include <suil/suil.h>
 
-namespace juce {
 namespace lvtk {
 
 #include "features/lvtk_LV2Features.h"
@@ -49,6 +48,6 @@ namespace lvtk {
 #include "host/lvtk_LV2Module.h"
 #include "host/lvtk_LV2PluginFormat.h"
 
-}}
+}
 
 #endif

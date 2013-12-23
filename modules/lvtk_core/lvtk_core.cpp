@@ -14,11 +14,9 @@
     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-
 #include "AppConfig.h"
 #include "lvtk_core.h"
 
-namespace juce {
 namespace lvtk {
     
 #include "source/lvtk_PortBuffer.cpp"
@@ -26,4 +24,4 @@ namespace lvtk {
 #include "source/lvtk_RingBuffer.cpp"
 #include "source/lvtk_WorkThread.cpp"
     
-}}
+}
