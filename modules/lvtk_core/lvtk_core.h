@@ -32,6 +32,7 @@
  #define LVTK_USE_CXX11 1
 #endif
 
+#include <cassert>
 #include <functional>
 #include <map>
 
