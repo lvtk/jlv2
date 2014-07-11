@@ -55,7 +55,16 @@
 #endif
 
 namespace lvtk {
+
 using namespace LVTK_JUCE_NAMESPACE;
+using LVTK_JUCE_NAMESPACE::int8;
+using LVTK_JUCE_NAMESPACE::int16;
+using LVTK_JUCE_NAMESPACE::int32;
+using LVTK_JUCE_NAMESPACE::int64;
+using LVTK_JUCE_NAMESPACE::uint8;
+using LVTK_JUCE_NAMESPACE::uint16;
+using LVTK_JUCE_NAMESPACE::uint32;
+using LVTK_JUCE_NAMESPACE::uint64;
 
 #include "source/lvtk_URIs.h"
 #include "source/lvtk_PortType.h"

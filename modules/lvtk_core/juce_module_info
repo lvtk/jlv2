@@ -6,7 +6,7 @@
   "website":        "http://lvtoolkit.org",
   "license":        "ISC Permissive",
 
-  "dependencies":   [ { "id": "juce_core", "version": "3.0.0" } ],
+  "dependencies":   [ { "id": "juce_core", "version": "3.0.6" } ],
 
   "include":        "lvtk_core.h",
 

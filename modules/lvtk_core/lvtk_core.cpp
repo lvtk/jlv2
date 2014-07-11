@@ -18,10 +18,9 @@
 #include "lvtk_core.h"
 
 namespace lvtk {
-    
+
 #include "source/lvtk_PortBuffer.cpp"
 #include "source/lvtk_PortWriter.cpp"
 #include "source/lvtk_RingBuffer.cpp"
 #include "source/lvtk_WorkThread.cpp"
-    
 }

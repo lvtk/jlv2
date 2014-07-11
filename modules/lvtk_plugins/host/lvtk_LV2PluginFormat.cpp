@@ -259,15 +259,15 @@ public:
         }
         
         for (int32 i = getNumInputChannels(); --i >= 0;)
-            module->connectPort (chans.getAudioInputPort(i), audio.getSampleData (i));
+            module->connectPort (chans.getAudioInputPort(i), audio.getWritePointer (i));
 
         for (int32 i = getNumOutputChannels(); --i >= 0;)
-            module->connectPort (chans.getAudioOutputPort(i), tempBuffer.getSampleData (i));
+            module->connectPort (chans.getAudioOutputPort(i), tempBuffer.getWritePointer (i));
 
         module->run ((uint32) numSamples);
 
         for (int32 i = getNumOutputChannels(); --i >= 0;)
-            audio.copyFrom (i, 0, tempBuffer.getSampleData (i), numSamples);
+            audio.copyFrom (i, 0, tempBuffer.getWritePointer (i), numSamples);
         
         if (notifyPort != LV2UI_INVALID_PORT_INDEX)
         {
