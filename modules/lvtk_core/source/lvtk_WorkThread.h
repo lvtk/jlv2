@@ -17,7 +17,7 @@
 #ifndef LVTK_JUCE_WORKTHREAD_H
 #define LVTK_JUCE_WORKTHREAD_H
 
-class Worker;
+class WorkerBase;
 
 /** A worker thread
     Capable of scheduling non-realtime work from a realtime context. */
@@ -32,24 +32,24 @@ public:
     
 protected:
     
-    friend class Worker;
+    friend class WorkerBase;
     
     /** Register a worker for scheduling. Does not take ownership */
-    void registerWorker (Worker* worker);
+    void registerWorker (WorkerBase* worker);
     
     /** Deregister a worker from scheduling. Does not delete the worker */
-    void removeWorker (Worker* worker);
+    void removeWorker (WorkerBase* worker);
     
     /** Schedule non-realtime work
         Workers will call this in Worker::scheduleWork */
-    bool scheduleWork (Worker* worker, uint32 size, const void* data);
+    bool scheduleWork (WorkerBase* worker, uint32 size, const void* data);
 
 private:
     
     uint32 bufferSize;
     
-    Worker* getWorker (uint32 workerId) const;
-    Array<Worker*, CriticalSection> workers;
+    WorkerBase* getWorker (uint32 workerId) const;
+    Array<WorkerBase*, CriticalSection> workers;
     
     uint32 nextWorkId;
     
@@ -77,19 +77,18 @@ private:
     Atomic<int32> flag;
     inline bool setWorking (bool status) { return flag.compareAndSetBool (status ? 1 : 0, status ? 0 : 1); }
     friend class WorkThread;
-    
 };
 
 
-class Worker
+class WorkerBase
 {
 public:
     
     /** Create a new Worker
         @param thread The WorkThread to use when scheduling
         @param bufsize Size to use for internal response buffers */
-    Worker (WorkThread& thread, uint32 bufsize);
-    virtual ~Worker();
+    WorkerBase (WorkThread& thread, uint32 bufsize);
+    virtual ~WorkerBase();
     
     /** Returns true if the worker is currently working */
     inline bool isWorking() const { return flag.isWorking(); }
@@ -132,7 +131,7 @@ private:
     bool validateMessage (RingBuffer& ring);
     
     friend class WorkThread;
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Worker)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WorkerBase)
 };
 
 

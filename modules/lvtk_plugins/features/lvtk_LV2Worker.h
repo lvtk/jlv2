@@ -21,7 +21,7 @@
 #define LVTK_JUCE_LV2WORKER_H
 
 class LV2Worker :  public LV2Feature,
-                   public Worker
+                   public WorkerBase
 {
 public:
     

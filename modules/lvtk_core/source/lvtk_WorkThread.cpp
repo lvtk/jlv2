@@ -38,7 +38,7 @@ WorkThread::~WorkThread()
     requests = nullptr;
 }
 
-Worker*
+WorkerBase*
 WorkThread::getWorker (uint32 workerId) const
 {
     if (workerId == 0)
@@ -53,7 +53,7 @@ WorkThread::getWorker (uint32 workerId) const
 
 
 void
-WorkThread::registerWorker (Worker* worker)
+WorkThread::registerWorker (WorkerBase* worker)
 {
     worker->workId = ++nextWorkId;
     LVTK_WORKER_LOG (getThreadName() + " Registering worker: id = " + String (worker->workId));
@@ -61,7 +61,7 @@ WorkThread::registerWorker (Worker* worker)
 }
 
 void
-WorkThread::removeWorker (Worker* worker)
+WorkThread::removeWorker (WorkerBase* worker)
 {
     LVTK_WORKER_LOG (getThreadName() + " Removing worker: id = " + String (worker->workId));
     workers.removeFirstMatchingValue (worker);
@@ -117,7 +117,7 @@ WorkThread::run()
         LVTK_WORKER_LOG (getThreadName() + ": Finding Worker ID " + String (workId));
         
         {
-            if (Worker* const worker = getWorker (workId))
+            if (WorkerBase* const worker = getWorker (workId))
             {
                 while (! worker->flag.setWorking (true)) {}
                 worker->processRequest (size, buffer.getData());
@@ -134,7 +134,7 @@ WorkThread::run()
 
 
 bool
-WorkThread::scheduleWork (Worker* worker, uint32 size, const void* data)
+WorkThread::scheduleWork (WorkerBase* worker, uint32 size, const void* data)
 {
     jassert (size > 0 && worker && worker->workId != 0);
     if (! requests->canWrite (requiredSpace (size)))
@@ -162,7 +162,7 @@ WorkThread::validateMessage (RingBuffer& ring)
 }
 
 
-Worker::Worker (WorkThread& thread, uint32 bufsize)
+WorkerBase::WorkerBase (WorkThread& thread, uint32 bufsize)
     : owner (thread)
 {
     responses = new RingBuffer (bufsize);
@@ -170,7 +170,7 @@ Worker::Worker (WorkThread& thread, uint32 bufsize)
     thread.registerWorker (this);
 }
 
-Worker::~Worker()
+WorkerBase::~WorkerBase()
 {
     while (flag.isWorking()) {
         Thread::sleep (100);
@@ -182,13 +182,13 @@ Worker::~Worker()
 }
 
 bool
-Worker::scheduleWork (uint32 size, const void* data)
+WorkerBase::scheduleWork (uint32 size, const void* data)
 {
     return owner.scheduleWork (this, size, data);
 }
 
 bool
-Worker::respondToWork (uint32 size, const void* data)
+WorkerBase::respondToWork (uint32 size, const void* data)
 {
     if (! responses->canWrite (sizeof (size) + size))
         return false;
@@ -203,7 +203,7 @@ Worker::respondToWork (uint32 size, const void* data)
 }
 
 void
-Worker::processWorkResponses()
+WorkerBase::processWorkResponses()
 {
     uint32 remaining = responses->getReadSpace();
     uint32 size      = 0;
@@ -222,7 +222,7 @@ Worker::processWorkResponses()
 }
 
 bool
-Worker::validateMessage (RingBuffer& ring)
+WorkerBase::validateMessage (RingBuffer& ring)
 {
     // the worker only validates message size
     uint32 size = 0;
@@ -231,7 +231,7 @@ Worker::validateMessage (RingBuffer& ring)
 }
 
 void
-Worker::setSize (uint32 newSize)
+WorkerBase::setSize (uint32 newSize)
 {
     responses = new RingBuffer (newSize);
     response.realloc (newSize);

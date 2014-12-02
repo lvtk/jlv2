@@ -51,7 +51,7 @@
 #include "modules/juce_core/juce_core.h"
 
 #ifndef LVTK_JUCE_NAMESPACE
-#define LVTK_JUCE_NAMESPACE juce
+ #define LVTK_JUCE_NAMESPACE juce
 #endif
 
 namespace lvtk {

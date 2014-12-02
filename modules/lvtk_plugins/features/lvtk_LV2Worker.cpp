@@ -39,7 +39,7 @@ namespace LV2Callbacks
 LV2Worker::LV2Worker (WorkThread& thread, uint32 bufsize,
                       LV2_Handle handle,
                       LV2_Worker_Interface* iface)
-    : Worker (thread, bufsize)
+    : WorkerBase (thread, bufsize)
 {
     setInterface (handle, iface);
     
