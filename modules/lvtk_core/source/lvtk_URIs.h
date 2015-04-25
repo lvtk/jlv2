@@ -34,7 +34,6 @@ public:
     const LV2_URID atom_Sound;
     const LV2_URID event_Event;
     const LV2_URID midi_MidiEvent;
-    
 };
 
 #endif

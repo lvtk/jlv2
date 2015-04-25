@@ -134,18 +134,15 @@ Semaphore::tryWait()
 
 #elif defined(_WIN32)
 
-inline
-Semaphore::Semaphore() {}
+inline Semaphore::Semaphore() { }
 
-inline bool
-Semaphore::init(unsigned initial)
+inline bool Semaphore::init(unsigned initial)
 {
   semaphore = CreateSemaphore(NULL, initial, LONG_MAX, NULL);
   return (semaphore) ? false : true;
 }
 
-inline void
-Semaphore::~ContedSemaphore()
+inline Semaphore::~Semaphore()
 {
   CloseHandle(semaphore);
 }
@@ -163,7 +160,7 @@ Semaphore::wait()
 }
 
 inline bool
-Semaphore::try_wait()
+Semaphore::tryWait()
 {
   WaitForSingleObject(semaphore, 0);
 }
