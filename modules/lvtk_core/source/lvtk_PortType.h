@@ -146,8 +146,8 @@ public:
     {
         init();
         
-        for (uint32 port = 0; port < types.size(); ++port)
-            addPort (types.getUnchecked (port), port);
+        for (int port = 0; port < types.size(); ++port)
+            addPort (types.getUnchecked (port), (uint32) port);
     }
     
     inline void
