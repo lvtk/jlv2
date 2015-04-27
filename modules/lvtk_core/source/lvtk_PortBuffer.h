@@ -33,7 +33,6 @@ public:
     void reset();
     
 private:
-    
     uint32 type, capacity;
     HeapBlock<uint8> block;
     
@@ -41,7 +40,6 @@ private:
         LV2_Atom*         atom;
         LV2_Event_Buffer* event;
     } buffer;
-        
 };
 
 #endif

@@ -95,9 +95,7 @@ public:
         return res;
     }
 
-    
 private:
-
     /** @internal */
     static inline const String&
     typeURI (unsigned id)
@@ -203,14 +201,11 @@ public:
     inline uint32 getEventPort   (const int32 channel) const { return ports.getUnchecked(PortType::Event)->getUnchecked(channel); }
     inline uint32 getMidiPort    (const int32 channel) const { return ports.getUnchecked(PortType::Midi)->getUnchecked(channel); }
     
-    
 private:
-    
     // owned arrays of arrays....
     OwnedArray<Array<uint32> > ports;
     
-    inline void
-    init()
+    inline void init()
     {
         ports.ensureStorageAllocated (PortType::Unknown + 1);
         for (int32 p = 0; p <= PortType::Unknown; ++p)
@@ -281,10 +276,10 @@ private:
 struct PortDescription
 {
     PortDescription() : index(0), isInput (false), type (PortType::Unknown) { }
-    uint32      index;
+    int32       index;
     String      symbol;
     bool        isInput;
-    uint32      type;
+    int32       type;
 };
 
 #endif /* LVTK_JUCE_PORTTYPE_H */

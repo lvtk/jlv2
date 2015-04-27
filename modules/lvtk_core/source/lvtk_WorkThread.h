@@ -66,24 +66,21 @@ private:
 };
 
 /** A flag that indicates whether work is happening or not */
-class WorkFlag {
+class WorkFlag
+{
 public:
-    
     WorkFlag() { flag = 0; }
     inline bool isWorking() const { return flag.get() != 0; }
     
 private:
-    
     Atomic<int32> flag;
     inline bool setWorking (bool status) { return flag.compareAndSetBool (status ? 1 : 0, status ? 0 : 1); }
     friend class WorkThread;
 };
 
-
 class WorkerBase
 {
 public:
-    
     /** Create a new Worker
         @param thread The WorkThread to use when scheduling
         @param bufsize Size to use for internal response buffers */
@@ -112,7 +109,6 @@ public:
     void setSize (uint32 newSize);
     
 protected:
-    
     /** Process work (worker thread) */
     virtual void processRequest (uint32 size, const void* data) = 0;
     
@@ -120,7 +116,6 @@ protected:
     virtual void processResponse (uint32 size, const void* data) = 0;
     
 private:
-    
     WorkThread& owner;
     uint32 workId;                       ///< The thread assigned id for this worker
     WorkFlag flag;                       ///< A flag for when work is being processed
@@ -131,7 +126,7 @@ private:
     bool validateMessage (RingBuffer& ring);
     
     friend class WorkThread;
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WorkerBase)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WorkerBase);
 };
 
 
