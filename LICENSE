@@ -1,5 +1,5 @@
-Sources in the folder modules/lvtk_core are under the ISC permissive license.
+Sources in the folder modules/jlv2_core are under the ISC permissive license:
 See http://opensource.org/licenses/ISC for more information.
 
-Sources in the folders modules/lvtk_plugins and modules/lvtk_client are under
-the GPL v3 license. See http://www.gnu.org/copyleft/gpl.html
+Sources in the folder modules/jlv2_host are under the GPL v3 license.:
+See http://www.gnu.org/copyleft/gpl.html

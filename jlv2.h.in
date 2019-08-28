@@ -1,0 +1,5 @@
+#pragma once
+#include <juce/audio_processors.h>
+#include <juce/data_structures.h>
+#include <jlv2/config.h>
+#include <jlv2_host/jlv2_host.h>
