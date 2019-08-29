@@ -71,7 +71,7 @@ public:
             ui = uiptr.release();
         }
        #endif
-        return ui;
+        return ui.get();
     }
 
     void sendControlValues()
@@ -650,7 +650,7 @@ uint32 Module::getPortIndex (const String& symbol) const
 ModuleUI* Module::createEditor()
 {
     if (priv->ui)
-        return priv->ui;
+        return priv->ui.get();
     
     ModuleUI* instance = nullptr;
 

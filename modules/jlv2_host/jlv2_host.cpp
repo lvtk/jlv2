@@ -25,7 +25,7 @@
  #error "Incorrect use of JUCE cpp file"
 #endif
 
-#include "jlv2/jlv2.h"
+#include "jlv2_host/jlv2_host.h"
 
 #include <lv2/lv2plug.in/ns/ext/state/state.h>
 #include <lv2/lv2plug.in/ns/lv2core/lv2.h>

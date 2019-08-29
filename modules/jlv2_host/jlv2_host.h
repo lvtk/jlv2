@@ -17,7 +17,7 @@
 /*
     BEGIN_JUCE_MODULE_DECLARATION
 
-    ID:               jlv2
+    ID:               jlv2_host
     vendor:           LV2 Toolkit
     version:          0.0.1
     name:             LV2 Plugins
@@ -38,6 +38,7 @@
 #define JLV2_H_INCLUDED
 
 #include <juce_core/juce_core.h>
+#include <juce_audio_processors/juce_audio_processors.h>
 
 // DLL building settings on Windows
 #if JUCE_MSVC
