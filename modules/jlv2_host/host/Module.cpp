@@ -16,9 +16,6 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
-#include <lv2/lv2plug.in/ns/ext/state/state.h>
-
 namespace jlv2 {
 
 namespace LV2Callbacks {
@@ -168,6 +165,8 @@ private:
 
     HeapBlock<float> mins, maxes, defaults;    
     OwnedArray<PortBuffer> buffers;
+
+    LV2_Feature instanceFeature { LV2_INSTANCE_ACCESS_URI, nullptr };
 };
 
 Module::Module (World& world_, const void* plugin_)
@@ -371,7 +370,7 @@ Result Module::instantiate (double samplerate)
         }
     }
     lilv_nodes_free (nodes); nodes = nullptr;
-
+    
     features.add (nullptr);
     instance = lilv_plugin_instantiate (plugin, samplerate,
                                         features.getRawDataPointer());
@@ -493,9 +492,9 @@ const void* Module::getExtensionData (const String& uri) const
     return instance ? lilv_instance_get_extension_data (instance, uri.toUTF8()) : nullptr;
 }
 
-LV2_Handle Module::getHandle()
+void* Module::getHandle()
 {
-    return instance ? lilv_instance_get_handle (instance) : nullptr;
+    return instance ? (void*) lilv_instance_get_handle (instance) : nullptr;
 }
 
 uint32 Module::getNumPorts() const { return numPorts; }
@@ -503,21 +502,6 @@ uint32 Module::getNumPorts() const { return numPorts; }
 uint32 Module::getNumPorts (PortType type, bool isInput) const
 {
     return static_cast<uint32> (priv->ports.size (type, isInput));
-    #if 0
-    if (type == PortType::Unknown)
-        return 0;
-
-    const LilvNode* flow = isInput ? world.lv2_InputPort : world.lv2_OutputPort;
-    const LilvNode* kind = type == PortType::Audio ? world.lv2_AudioPort
-                        : type == PortType::Atom  ? world.lv2_AtomPort
-                        : type == PortType::Control ? world.lv2_ControlPort
-                        : type == PortType::CV ? world.lv2_CVPort : nullptr;
-
-    if (kind == nullptr || flow == nullptr)
-        return 0;
-
-    return lilv_plugin_get_num_ports_of_class (plugin, kind, flow, nullptr);
-   #endif
 }
 
 const LilvPort* Module::getPort (uint32 port) const

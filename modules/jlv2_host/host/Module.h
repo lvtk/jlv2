@@ -63,7 +63,7 @@ public:
     uint32 getNotifyPort() const;
 
     /** Get the underlying LV2_Handle */
-    LV2_Handle getHandle();
+    void* getHandle();
 
     /** Get the LilvPlugin object for this Module */
     const LilvPlugin* getPlugin() const;
@@ -313,6 +313,12 @@ public:
         resizeFeature.data = (void*) &hostResizeData;
         features.add (&resizeFeature);
 
+        if (auto handle = module.getHandle())
+        {
+            instanceFeature.data = (void*) handle;
+            features.add (&instanceFeature);
+        }
+
         // terminate the array
         features.add (nullptr);
 
@@ -375,6 +381,7 @@ private:
     LV2_Feature resizeFeature { LV2_UI__resize, nullptr };
     LV2UI_Resize hostResizeData;
     LV2UI_Resize* clientResize = nullptr;
+    LV2_Feature instanceFeature { LV2_INSTANCE_ACCESS_URI, nullptr };
 
     int clientWidth = 0;
     int clientHeight = 0;
