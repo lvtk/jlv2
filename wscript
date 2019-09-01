@@ -31,7 +31,8 @@ def configure (conf):
     conf.write_config_header ('jlv2/version.h', 'JLV2_VERSION_H')
     
     for jmod in [ 'juce_audio_processors', 'juce_data_structures', 
-                  'juce_audio_devices', 'juce_audio_utils' ]:
+                  'juce_audio_devices', 'juce_audio_utils',
+                  'juce_gui_extra' ]:
         pkgname = '%s_debug-5' % jmod if conf.options.debug else '%s-5' % jmod
         conf.check_cfg (package=pkgname, uselib_store=jmod.upper(), 
                         args=['--libs', '--cflags'], mandatory=True)
@@ -106,7 +107,8 @@ def build (bld):
         includes    = [ 'build', 'modules' ],
         name        = 'JLV2',
         target      = 'lib/%s' % library_slug (bld),
-        use         = [ 'JLV2_HEADER', 'JUCE_AUDIO_PROCESSORS', 'JUCE_DATA_STRUCTURES', 
+        use         = [ 'JLV2_HEADER', 'JUCE_AUDIO_PROCESSORS', 
+                        'JUCE_DATA_STRUCTURES', 'JUCE_GUI_EXTRA',
                         'LILV', 'SUIL' ],
         vnum        = VERSION
     )

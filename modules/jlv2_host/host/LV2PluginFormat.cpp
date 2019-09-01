@@ -374,7 +374,8 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LV2PluginInstance)
 };
 
-class LV2EditorJuce : public AudioProcessorEditor
+class LV2EditorJuce : public AudioProcessorEditor,
+                      public Timer
 {
 public:
     LV2EditorJuce (LV2PluginInstance* p, ModuleUI::Ptr _ui)
@@ -383,29 +384,74 @@ public:
           ui (_ui)
     {
         setOpaque (true);
-        widget.setNonOwned ((Component*) ui->getWidget());
-        if (widget)
+
+        if (ui && ui->isNative())
         {
-            addAndMakeVisible (widget.get());
-            setSize (widget->getWidth(), widget->getHeight());
+            addAndMakeVisible (native);
+            setSize (640, 360);
+            startTimerHz (60);
+            setResizable (true, false);
         }
         else
         {
-            jassertfalse;
-            setSize (320, 180);
+            widget.setNonOwned ((Component*) ui->getWidget());
+            if (widget)
+            {
+                addAndMakeVisible (widget.get());
+                setSize (widget->getWidth(), widget->getHeight());
+            }
+            else
+            {
+                jassertfalse;
+                setSize (320, 180);
+            }
         }
     }
 
     ~LV2EditorJuce()
     {
-        removeChildComponent (widget.get());
-        widget.clear();
+        if (ui && ui->isNative())
+        {
+            native.setView (nullptr);
+            removeChildComponent (&native);            
+        }
+        else
+        {
+            removeChildComponent (widget.get());
+            widget.clear();
+        }
+        
+        
         plugin.editorBeingDeleted (this);
         if (ui)
         {
             ui->unload();
         }
         ui = nullptr;
+    }
+
+    void timerCallback() override {
+        if (! nativeViewSetup)
+        {
+            if (auto* const peer = native.getPeer()) 
+            {
+                if (native.isVisible()) 
+                {
+                    ui->setParent ((void*) peer->getNativeHandle());
+                    ui->instantiate();
+                    if (ui->loaded())
+                    {
+                        DBG("ui was loaded");
+                        native.setView (ui->getWidget());
+                        nativeViewSetup = true;
+                    }
+                }
+            }
+        }
+
+        if (nativeViewSetup) {
+            ui->idle();
+        }
     }
 
     void paint (Graphics& g) override
@@ -415,6 +461,11 @@ public:
 
     void resized() override
     {
+        if (ui->isNative())
+        {
+            native.setBounds (getLocalBounds());
+        }
+
         if (widget)
             widget->setBounds (0, 0, widget->getWidth(), widget->getHeight());
     }
@@ -423,6 +474,12 @@ private:
     LV2PluginInstance& plugin;
     ModuleUI::Ptr ui = nullptr;
     OptionalScopedPointer<Component> widget;
+    bool nativeViewSetup = false;
+   #if JUCE_MAC
+    NSViewComponent native;
+   #else
+    
+   #endif
 };
 
 AudioProcessorEditor* LV2PluginInstance::createEditor()

@@ -58,9 +58,11 @@ public:
             else
                 editor = new GenericAudioProcessorEditor (instance);
             window.reset (new PluginWindow (*plugin));
+            window->setUsingNativeTitleBar (true);
             window->setName (plugin->getName());
             window->setContentOwned (editor, true);
             window->centreWithSize (window->getWidth(), window->getHeight());
+            window->setResizable (true, false);
             window->setVisible (true);
         }
         else

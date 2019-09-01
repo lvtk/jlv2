@@ -188,6 +188,7 @@ private:
     const LilvPlugin* plugin;
     World&    world;
     mutable String bestUI;
+    mutable String nativeUI;
 
     bool active;
     double currentSampleRate;
@@ -231,7 +232,7 @@ public:
 
     void unload()
     {
-        plugin.clearEditor();
+        module.clearEditor();
         
         if (instance)
         {
@@ -241,7 +242,7 @@ public:
     }
 
     World& getWorld()   const { return world; }
-    Module& getPlugin() const { return plugin; }
+    Module& getPlugin() const { return module; }
 
     LV2UI_Widget getWidget() const
     { 
@@ -256,16 +257,78 @@ public:
         suil_instance_port_event (instance, port, size, format, buffer);
     }
 
+    bool isNative() const 
+    {
+       #if JUCE_MAC
+        return widgetType == LV2_UI__CocoaUI;
+       #elif JUCE_WINDOWS
+        return widgetType == LV2_UI__WindowsUI;
+       #else
+        return widgetType == LV2_UI__X11UI;
+       #endif
+    }
+
+    bool isA (const String& uiTypeURI) const
+    {
+        return uiTypeURI == widgetType;
+    }
+
+    void instantiate() {
+        if (loaded())
+            return;
+        
+        Array<const LV2_Feature*> features;
+        world.getFeatures (features);
+        if (parent.data != nullptr)
+            features.add (&parent);
+        
+        features.add (0);
+
+        instance = suil_instance_new (
+            world.getSuilHost(), this,
+            containerType.toRawUTF8(),
+            plugin.toRawUTF8(),
+            ui.toRawUTF8(),
+            widgetType.toRawUTF8(),
+            bundlePath.toRawUTF8(),
+            binaryPath.toRawUTF8(),
+            features.getRawDataPointer()
+        );
+    }
+
+    void idle() {
+        if (! idleIface || ! instance)
+            return;
+        idleIface->idle ((LV2UI_Handle) suil_instance_get_handle (instance));
+    }
+
+    void setParent (void* ptr) 
+    {
+        parent.data = ptr;
+    }
+
 private:
     friend class Module;
     friend class World;
 
+    LV2UI_Idle_Interface *idleIface = nullptr;
+    LV2_Feature parent { LV2_UI__parent, nullptr };
+
     ModuleUI (World& w, Module& m)
-        : world (w), plugin (m) { }
+        : world (w), module (m) { 
+
+        }
 
     World& world;
-    Module& plugin;
+    Module& module;
+
     SuilInstance* instance = nullptr;
+    String containerType {};
+    String plugin {};
+    String ui {};
+    String widgetType {};
+    String bundlePath {};
+    String binaryPath {};
 
     static void portWrite (void* controller, uint32_t port, uint32_t size,
                            uint32_t protocol, void const* buffer)

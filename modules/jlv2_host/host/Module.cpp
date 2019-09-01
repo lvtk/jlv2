@@ -16,6 +16,7 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
 #include <lv2/lv2plug.in/ns/ext/state/state.h>
 
 namespace jlv2 {
@@ -27,10 +28,19 @@ inline unsigned uiSupported (const char* hostType, const char* uiType)
     String host (hostType);
     String ui (uiType);
 
-    if (host == LV2_UI__X11UI && ui == LV2_UI__X11UI)
-        return 2;
-    else if (ui == LVTK__JUCEUI)
+    if (ui == "JUCEUI")
         return 1;
+    
+   #if JUCE_MAC
+    if (ui == LV2_UI__CocoaUI)
+   #elif JUCE_WINDOWS
+    if (ui == LV2_UI__WindowsUI)
+   #else
+    if (ui == LV2_UI__CocoaUI)
+   #endif
+    {
+        return 2;
+    }
 
     return suil_ui_supported (hostType, uiType);
 }
@@ -46,9 +56,9 @@ public:
     ~Private() { }
 
     ModuleUI* instantiateUI (const LilvUI* uiNode,
-                                const LilvNode* containerType,
-                                const LilvNode* widgetType,
-                                const LV2_Feature* const * features)
+                             const LilvNode* containerType,
+                             const LilvNode* widgetType,
+                             const LV2_Feature* const * features)
     {
        #if 1
         suil = owner.getWorld().getSuilHost();
@@ -56,6 +66,15 @@ public:
         const LilvPlugin* plugin = owner.getPlugin();
         auto uiptr = std::unique_ptr<ModuleUI> (new ModuleUI (owner.getWorld(), owner));
 
+        uiptr->containerType = lilv_node_as_uri (containerType);
+        uiptr->plugin = lilv_node_as_uri (lilv_plugin_get_uri (plugin));
+        uiptr->ui = lilv_node_as_uri (uri);
+        uiptr->widgetType = lilv_node_as_uri (widgetType);
+        uiptr->bundlePath = lilv_uri_to_path (lilv_node_as_uri (lilv_ui_get_bundle_uri (uiNode)));
+        uiptr->binaryPath = lilv_uri_to_path (lilv_node_as_uri (lilv_ui_get_binary_uri (uiNode)));
+        ui = uiptr.release();
+        
+       #if 0
         auto* instance = suil_instance_new (suil, uiptr.get(),
                             lilv_node_as_uri (containerType),
                             lilv_node_as_uri (lilv_plugin_get_uri (plugin)),
@@ -68,6 +87,9 @@ public:
         if (instance != nullptr)
         {
             uiptr->instance = instance;
+            uiptr->typeURI = lilv_node_as_uri (widgetType);
+            uiptr->idleIface = (LV2UI_Idle_Interface*) suil_instance_extension_data (
+                instance, LV2_UI__idleInterface);
             ui = uiptr.release();
         }
        #endif
@@ -545,8 +567,6 @@ uint32 Module::getNotifyPort() const
 
 const LilvPlugin* Module::getPlugin() const { return plugin; }
 
-
-
 const String Module::getPortName (uint32 index) const
 {
     if (const LilvPort* port = getPort (index))
@@ -607,7 +627,11 @@ bool Module::hasEditor() const
     LILV_FOREACH (uis, iter, uis)
     {
         const LilvUI* ui = lilv_uis_get (uis, iter);
-        const unsigned quality = lilv_ui_is_supported (ui, &LV2Callbacks::uiSupported, world.ui_JUCEUI, nullptr);
+        const unsigned quality = lilv_ui_is_supported (
+            ui, &LV2Callbacks::uiSupported,
+            world.ui_JUCEUI, nullptr
+        );
+        
         const auto uri = String::fromUTF8 (lilv_node_as_string (lilv_ui_get_uri (ui)));
         
         if (quality == 1)
@@ -615,11 +639,14 @@ bool Module::hasEditor() const
             bestUI = uri;
             break;
         }
+        else if (quality == 2) {
+            nativeUI = uri;
+        }
     }
 
     lilv_uis_free (uis);
     
-    return bestUI.isNotEmpty();
+    return bestUI.isNotEmpty() || nativeUI.isNotEmpty();
 }
 
 void Module::clearEditor()
@@ -660,11 +687,26 @@ ModuleUI* Module::createEditor()
         {
             const LilvUI* uiNode = lilv_uis_get (uis, iter);
             const unsigned quality = lilv_ui_is_supported (uiNode, &LV2Callbacks::uiSupported, world.ui_JUCEUI, nullptr);
+            const auto uri = String::fromUTF8 (lilv_node_as_string (lilv_ui_get_uri (uiNode)));
 
             if (quality == 1)
             {
                 instance = priv->instantiateUI (uiNode,
                     world.ui_JUCEUI, world.ui_JUCEUI,
+                    world.getFeatureArray().getFeatures());
+                break;
+            }
+            else if (quality == 2)
+            {
+                DBG("creating native UI: " << uri);
+                instance = priv->instantiateUI (uiNode,
+                   #if JUCE_MAC
+                   world.ui_CocoaUI, world.ui_CocoaUI,
+                   #elif JUCE_WINDOWS
+                   world.ui_WindowsUI, world.ui_WindowsUI,
+                   #else
+                    world.ui_X11UI, world.ui_X11UI,
+                   #endif
                     world.getFeatureArray().getFeatures());
                 break;
             }

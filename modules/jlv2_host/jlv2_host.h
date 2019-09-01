@@ -39,26 +39,27 @@
 
 #include <juce_core/juce_core.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_gui_extra/juce_gui_extra.h>
 
 // DLL building settings on Windows
-#if JUCE_MSVC
- #ifdef JUCE_DLL_BUILD
-  #define JLV2_EXPORT __declspec (dllexport)
-  #pragma warning (disable: 4251)
- #elif defined (JUCE_DLL)
-  #define JLV2_EXPORT __declspec (dllimport)
-  #pragma warning (disable: 4251)
- #endif
- #ifdef __INTEL_COMPILER
-  #pragma warning (disable: 1125) // (virtual override warning)
- #endif
-#else // if defined (JUCE_DLL) || defined (JUCE_DLL_BUILD)
- #define JLV2_EXPORT __attribute__ ((visibility("default")))
-#endif
+// testing symbol visibility.. copied from juce
+// #if JUCE_MSVC
+//  #ifdef JUCE_DLL_BUILD
+//   #define JLV2_API __declspec (dllexport)
+//   #pragma warning (disable: 4251)
+//  #elif defined (JUCE_DLL)
+//   #define JLV2_API __declspec (dllimport)
+//   #pragma warning (disable: 4251)
+//  #endif
+//  #ifdef __INTEL_COMPILER
+//   #pragma warning (disable: 1125) // (virtual override warning)
+//  #endif
+// #else // if defined (JUCE_DLL) || defined (JUCE_DLL_BUILD)
+//  #define JLV2_API __attribute__ ((visibility("default")))
+// #endif
 
-//==============================================================================
-#ifndef JLV2_EXPORT
- #define JLV2_EXPORT   /**< This macro is added to all JUCE public class declarations. */
+#ifndef JLV2_API
+ #define JLV2_API JUCE_API  /**< This macro is added to all JUCE public class declarations. */
 #endif
 
 namespace jlv2 {

@@ -21,7 +21,7 @@
 namespace jlv2 {
 
 /** Implements a plugin format manager for LV2 plugins in Juce Apps. */
-class JLV2_EXPORT LV2PluginFormat : public AudioPluginFormat
+class JLV2_API LV2PluginFormat : public AudioPluginFormat
 {
 public:
     LV2PluginFormat();

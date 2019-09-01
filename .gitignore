@@ -3,3 +3,5 @@
 .lock-waf*
 /build
 *.pyc
+
+/.vscode/settings.json
