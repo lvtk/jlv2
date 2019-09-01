@@ -129,6 +129,13 @@ public:
         return res;
     }
 
+    /** Returns true if the @p type is in range */
+    template<typename IT>
+    inline static bool isValidType (const IT& type) 
+    {
+        return type >= PortType::Control && type < PortType::Unknown;
+    }
+
 private:
     /** @internal */
     static inline const String& typeURI (unsigned id)
@@ -392,6 +399,12 @@ public:
                      const bool input)
     {
         add (new PortDescription (type, index, channel, symbol, name, input));
+    }
+
+    template<typename IT>
+    const PortDescription* get (const IT& index) const
+    {
+        return findByIndexInternal (static_cast<int> (index));
     }
 
     inline int getChannelForPort (const int port) const

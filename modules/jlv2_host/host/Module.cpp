@@ -55,7 +55,7 @@ public:
 
     ~Private() { }
 
-    ModuleUI* instantiateUI (const LilvUI* uiNode,
+    ModuleUI* createUI (const LilvUI* uiNode,
                              const LilvNode* containerType,
                              const LilvNode* widgetType,
                              const LV2_Feature* const * features)
@@ -160,6 +160,7 @@ private:
     PortList ports;
     ChannelConfig channels;
 
+    String uri;     ///< plugin URI
     String name;    ///< Plugin name
     String author;  ///< Plugin author name
 
@@ -216,12 +217,26 @@ void Module::init()
     for (uint32 p = 0; p < numPorts; ++p)
     {
         const LilvPort* port (lilv_plugin_get_port_by_index (plugin, p));
-        const auto type = getPortType (p);
+
+        // port type
+        PortType type = PortType::Unknown;
+        if (lilv_port_is_a (plugin, port, world.lv2_AudioPort))
+            type = PortType::Audio;
+        else if (lilv_port_is_a (plugin, port, world.lv2_AtomPort))
+            type = PortType::Atom;
+        else if (lilv_port_is_a (plugin, port, world.lv2_ControlPort))
+            type = PortType::Control;
+        else if (lilv_port_is_a (plugin, port, world.lv2_CVPort))
+            type = PortType::CV;
+        else if (lilv_port_is_a (plugin, port, world.lv2_EventPort))
+            type = PortType::Event;
+            
         const bool isInput (lilv_port_is_a (plugin, port, world.lv2_InputPort));
         LilvNode* nameNode = lilv_port_get_name (plugin, port);
         const String name = lilv_node_as_string (nameNode);
         lilv_node_free (nameNode); nameNode = nullptr;
         const String symbol  = lilv_node_as_string (lilv_port_get_symbol (plugin, port));
+
         priv->ports.add (type, p, priv->ports.size (type, isInput),
                          symbol, name, isInput);
         priv->channels.addPort (type, p, isInput);
@@ -271,6 +286,9 @@ void Module::init()
         lilv_world_load_resource (world.getWorld(), res);
     }
     lilv_nodes_free (related);
+
+    // plugin URI
+    priv->uri = String::fromUTF8 (lilv_node_as_string (lilv_plugin_get_uri (plugin)));
 
     // plugin name
     if (LilvNode* node = lilv_plugin_get_name (plugin))
@@ -453,6 +471,7 @@ void Module::connectPort (uint32 port, void* data)
     lilv_instance_connect_port (instance, port, data);
 }
 
+String Module::getURI()         const { return priv->uri; }
 String Module::getName()        const { return priv->name; }
 String Module::getAuthorName()  const { return priv->author; }
 
@@ -540,14 +559,8 @@ const LilvPlugin* Module::getPlugin() const { return plugin; }
 
 const String Module::getPortName (uint32 index) const
 {
-    if (const LilvPort* port = getPort (index))
-    {
-        LilvNode* node = lilv_port_get_name (plugin, port);
-        const String name = CharPointer_UTF8 (lilv_node_as_string (node));
-        lilv_node_free (node);
-        return name;
-    }
-
+    if (const auto* desc = priv->ports.get (index))
+        return desc->name;
     return String();
 }
 
@@ -561,27 +574,12 @@ void Module::getPortRange (uint32 port, float& min, float& max, float& def) cons
     def = priv->defaults [port];
 }
 
-PortType Module::getPortType (uint32 i) const
+PortType Module::getPortType (uint32 index) const
 {
-   const LilvPort* port (lilv_plugin_get_port_by_index (plugin, i));
-
-   if (lilv_port_is_a (plugin, port, world.lv2_AudioPort))
-       return PortType::Audio;
-   else if (lilv_port_is_a (plugin, port, world.lv2_AtomPort))
-       return PortType::Atom;
-   else if (lilv_port_is_a (plugin, port, world.lv2_ControlPort))
-       return PortType::Control;
-   else if (lilv_port_is_a (plugin, port, world.lv2_CVPort))
-       return PortType::CV;
-   else if (lilv_port_is_a (plugin, port, world.lv2_EventPort))
-       return PortType::Event;
-
-   return PortType::Unknown;
-}
-
-String Module::getURI() const
-{
-   return lilv_node_as_string (lilv_plugin_get_uri (plugin));
+    if (const auto* desc = priv->ports.get (index))
+        return desc->type >= PortType::Control && desc->type <= PortType::Unknown 
+            ? desc->type : PortType::Unknown;
+    return PortType::Unknown;
 }
 
 bool Module::isLoaded() const { return instance != nullptr; }
@@ -662,22 +660,19 @@ ModuleUI* Module::createEditor()
 
             if (quality == 1)
             {
-                instance = priv->instantiateUI (uiNode,
-                    world.ui_JUCEUI, world.ui_JUCEUI,
+                // JUCEUI 
+                instance = priv->createUI (uiNode,
+                    world.ui_JUCEUI, 
+                    world.ui_JUCEUI,
                     world.getFeatureArray().getFeatures());
                 break;
             }
             else if (quality == 2)
             {
-                DBG("creating native UI: " << uri);
-                instance = priv->instantiateUI (uiNode,
-                   #if JUCE_MAC
-                   world.ui_CocoaUI, world.ui_CocoaUI,
-                   #elif JUCE_WINDOWS
-                   world.ui_WindowsUI, world.ui_WindowsUI,
-                   #else
-                    world.ui_X11UI, world.ui_X11UI,
-                   #endif
+                // Native UI (CocoaUI, WindowsUI, or X11UI)
+                instance = priv->createUI (uiNode,
+                    world.getNativeWidgetType(),
+                    world.getNativeWidgetType(),
                     world.getFeatureArray().getFeatures());
                 break;
             }
@@ -795,12 +790,8 @@ void Module::run (uint32 nframes)
 
 uint32 Module::map (const String& uri) const
 {
-    if (const auto* f = world.getFeatureArray().getFeature (LV2_URID__map))
-    {
-        auto* map = (LV2_URID_Map*) f->getFeature()->data; 
-        return map->map (map->handle, uri.toRawUTF8());
-    }
-    return 0;
+    // FIXME: const in SymbolMap::map/unmap 
+    return (const_cast<World*> (&world))->map (uri);
 }
 
 void Module::write (uint32 port, uint32 size, uint32 protocol, const void* buffer)

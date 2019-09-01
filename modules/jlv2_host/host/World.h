@@ -26,7 +26,8 @@
 namespace jlv2 {
 
 /** Slim wrapper around LilvWorld.  Publishes commonly used LilvNodes and
-    manages heavy weight features (like LV2 Worker) */
+    manages heavy weight features (like LV2 Worker)
+ */
 class World
 {
 public:
@@ -44,6 +45,7 @@ public:
     const LilvNode*   work_schedule;
     const LilvNode*   work_interface;
     const LilvNode*   ui_CocoaUI;
+    const LilvNode*   ui_WindowsUI;
     const LilvNode*   ui_X11UI;
     const LilvNode*   ui_JUCEUI;
     const LilvNode*   ui_UI;
@@ -70,6 +72,8 @@ public:
 
     /** Returns true if the plugin is supported on this system */
     bool isPluginSupported (const String& uri) const;
+
+    /** Returns true if the plugin is supported on this system */
     bool isPluginSupported (const LilvPlugin* plugin) const;
 
     /** Return the underlying LilvWorld* pointer */
@@ -100,9 +104,27 @@ public:
 
     inline SuilHost* getSuilHost() { return suil; }
 
+    inline const LilvNode* getNativeWidgetType() const
+    {
+       #if JUCE_MAC
+        return ui_CocoaUI;
+       #elif JUCE_WINDOWS
+        return ui_WindowsUI;
+       #else
+        return ui_X11UI;
+       #endif
+    }
+
+    /** Map a URI */
+    const uint32 map (const String& uri) { return symbolMap.map (uri.toRawUTF8()); }
+
+    /** Unmap a URID */
+    String unmap (uint32 urid) { return symbolMap.unmap (urid); }
+
 private:
     LilvWorld* world;
     SuilHost* suil;
+    SymbolMap symbolMap;
     LV2FeatureArray features;
 
     // a simple rotating thread pool

@@ -69,7 +69,7 @@ public:
     /** Containment test of a URID
         @param urid The URID to test
         @return True if found */
-    inline bool contains (LV2_URID urid)
+    inline bool contains (LV2_URID urid) const
     {
         return unmapped.find (urid) != unmapped.end();
     }
@@ -107,13 +107,13 @@ private:
     typedef std::map<LV2_URID, std::string> Unmapped;
     Mapped mapped; Unmapped unmapped;
 
-    inline static LV2_URID map (LV2_URID_Map_Handle handle, const char* uri)
+    inline static LV2_URID _map (LV2_URID_Map_Handle handle, const char* uri)
     {
         SymbolMap* sym = reinterpret_cast<SymbolMap*> (handle);
         return sym->map (uri);
     }
 
-    inline static const char* unmap (LV2_URID_Map_Handle handle, LV2_URID urid)
+    inline static const char* _unmap (LV2_URID_Map_Handle handle, LV2_URID urid)
     {
         SymbolMap* sym = (SymbolMap*) handle;
         return sym->unmap (urid);
@@ -128,7 +128,7 @@ private:
             uri = LV2_URID__map;
             feat.URI    = uri.toRawUTF8();
             data.handle = (void*) parent;
-            data.map    = &SymbolMap::map;
+            data.map    = &SymbolMap::_map;
             feat.data   = &data;
         }
 
@@ -152,7 +152,7 @@ private:
             uri = LV2_URID__unmap;
             feat.URI    = uri.toRawUTF8();
             data.handle = (void*) parent;
-            data.unmap  = &SymbolMap::unmap;
+            data.unmap  = &SymbolMap::_unmap;
             feat.data   = &data;
         }
 

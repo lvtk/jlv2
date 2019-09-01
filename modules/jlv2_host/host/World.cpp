@@ -51,7 +51,6 @@ World::World()
     ui_X11UI        = lilv_new_uri (world, LV2_UI__X11UI);
     ui_JUCEUI       = lilv_new_uri (world, LVTK__JUCEUI);
     ui_UI           = lilv_new_uri (world, LV2_UI__UI);
-
     trueNode        = lilv_new_bool (world, true);
     falseNode       = lilv_new_bool (world, false);
     
@@ -69,6 +68,10 @@ World::World()
         threads.add (new WorkThread ("lv2_worker_ " + String(i + 1), 2048));
         threads.getLast()->setPriority (5);
     }
+
+    addFeature (symbolMap.createMapFeature(), false);
+    addFeature (symbolMap.createUnmapFeature(), false);
+    addFeature (new LogFeature(), true);
 }
 
 World::~World()

@@ -522,18 +522,7 @@ public:
 
 private:
     bool useExternalData;
-
-    void init()
-    {
-        createProvidedFeatures();
-    }
-
-    void createProvidedFeatures()
-    {
-        world->addFeature (symbols.createMapFeature(), false);
-        world->addFeature (symbols.createUnmapFeature(), false);
-        world->addFeature (new LogFeature(), true);
-    }
+    void init() { }
 };
 
 //=============================================================================
