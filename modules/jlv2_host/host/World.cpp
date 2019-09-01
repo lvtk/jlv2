@@ -59,7 +59,10 @@ World::World()
     lilv_world_load_all (world);
     suil_init (nullptr, nullptr, SUIL_ARG_NONE);
     suil = suil_host_new (ModuleUI::portWrite,
-                          ModuleUI::portIndex, 0, 0);
+                          ModuleUI::portIndex,
+                          ModuleUI::portSubscribe,
+                          ModuleUI::portUnsubscribe);
+    suil_host_set_touch_func (suil, ModuleUI::touch);
 
     currentThread = 0;
     numThreads    = JLV2_NUM_WORKERS;
