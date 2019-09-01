@@ -387,7 +387,15 @@ public:
 
         if (ui && ui->isNative())
         {
-            addAndMakeVisible (native);
+           #if JUCE_MAC
+            native.reset (new NSViewComponent());
+           #elif JUCE_LINUX
+            native.reset (new XEmbedComponent (true, false));
+           #endif
+
+            jassert (native);
+            addAndMakeVisible (native.get());
+
             setSize (640, 360);
             startTimerHz (60);
             setResizable (true, false);
@@ -412,8 +420,11 @@ public:
     {
         if (ui && ui->isNative())
         {
-            native.setView (nullptr);
-            removeChildComponent (&native);            
+           #if JUCE_MAC
+            native->setView (nullptr);
+           #elif JUCE_LINUX
+           #endif
+            native.reset();          
         }
         else
         {
@@ -430,40 +441,53 @@ public:
         ui = nullptr;
     }
 
-    void timerCallback() override {
+    void timerCallback() override
+    {
+        if (!ui || !ui->isNative())
+            return stopTimer();
+
         if (! nativeViewSetup)
         {
-            if (auto* const peer = native.getPeer()) 
+           #if JUCE_MAC
+            if (auto* const peer = native->getPeer()) 
             {
-                if (native.isVisible()) 
+                if (native->isVisible()) 
                 {
-                    ui->setParent ((void*) peer->getNativeHandle());
+                    ui->setParent ((intptr_t) peer->getNativeHandle());
                     ui->instantiate();
                     if (ui->loaded())
                     {
-                        DBG("ui was loaded");
-                        native.setView (ui->getWidget());
+                        native->setView (ui->getWidget());
                         nativeViewSetup = true;
                     }
                 }
             }
+           #elif JUCE_LINUX
+            ui->setParent ((intptr_t) native->getHostWindowID());
+            ui->instantiate();
+            nativeViewSetup = ui->loaded();
+           #endif
         }
 
-        if (nativeViewSetup) {
-            ui->idle();
+        if (nativeViewSetup)
+        {
+            if (ui->haveIdleInterface())
+                ui->idle();
+            else
+                stopTimer();
         }
     }
 
     void paint (Graphics& g) override
     {
-        g.fillAll (Colours::red);
+        g.fillAll (Colours::black);
     }
 
     void resized() override
     {
         if (ui->isNative())
         {
-            native.setBounds (getLocalBounds());
+            native->setBounds (getLocalBounds());
         }
 
         if (widget)
@@ -476,9 +500,11 @@ private:
     OptionalScopedPointer<Component> widget;
     bool nativeViewSetup = false;
    #if JUCE_MAC
-    NSViewComponent native;
+    std::unique_ptr<NSViewComponent> native;
+   #elif JUCE_WINDOWS
+    std::unique_ptr<Component> native;
    #else
-    
+    std::unique_ptr<XEmbedComponent> native;
    #endif
 };
 
