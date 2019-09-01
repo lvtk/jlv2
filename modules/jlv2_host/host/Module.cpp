@@ -60,12 +60,10 @@ public:
                              const LilvNode* widgetType,
                              const LV2_Feature* const * features)
     {
-       #if 1
-        suil = owner.getWorld().getSuilHost();
         const LilvNode* uri = lilv_ui_get_uri (uiNode);
         const LilvPlugin* plugin = owner.getPlugin();
+        
         auto uiptr = std::unique_ptr<ModuleUI> (new ModuleUI (owner.getWorld(), owner));
-
         uiptr->containerType = lilv_node_as_uri (containerType);
         uiptr->plugin = lilv_node_as_uri (lilv_plugin_get_uri (plugin));
         uiptr->ui = lilv_node_as_uri (uri);
@@ -73,27 +71,8 @@ public:
         uiptr->bundlePath = lilv_uri_to_path (lilv_node_as_uri (lilv_ui_get_bundle_uri (uiNode)));
         uiptr->binaryPath = lilv_uri_to_path (lilv_node_as_uri (lilv_ui_get_binary_uri (uiNode)));
         ui = uiptr.release();
-        
-       #if 0
-        auto* instance = suil_instance_new (suil, uiptr.get(),
-                            lilv_node_as_uri (containerType),
-                            lilv_node_as_uri (lilv_plugin_get_uri (plugin)),
-                            lilv_node_as_uri (uri),
-                            lilv_node_as_uri (widgetType),
-                            lilv_uri_to_path (lilv_node_as_uri (lilv_ui_get_bundle_uri (uiNode))),
-                            lilv_uri_to_path (lilv_node_as_uri (lilv_ui_get_binary_uri (uiNode))),
-                            features);
 
-        if (instance != nullptr)
-        {
-            uiptr->instance = instance;
-            uiptr->typeURI = lilv_node_as_uri (widgetType);
-            uiptr->idleIface = (LV2UI_Idle_Interface*) suil_instance_extension_data (
-                instance, LV2_UI__idleInterface);
-            ui = uiptr.release();
-        }
-       #endif
-        return ui.get();
+        return ui;
     }
 
     void sendControlValues()

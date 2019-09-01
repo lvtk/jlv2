@@ -22,37 +22,6 @@
 
 namespace jlv2 {
 
-namespace LV2Callbacks {
-
-uint32_t portSubscribe (
-    SuilController            controller,
-    uint32_t                  port_index,
-    uint32_t                  protocol,
-    const LV2_Feature* const* features)
-{
-    return 0;
-}
-
-/** Function to unsubscribe from notifications for a port. */
-uint32_t portUnsubscribe (
-    SuilController            controller,
-    uint32_t                  port_index,
-    uint32_t                  protocol,
-    const LV2_Feature* const* features)
-{
-    return 0;
-}
-
-/** Function called when a control is grabbed or released. */
-void touchFunction (SuilController controller,
-                    uint32_t       port_index,
-                    bool           grabbed)
-{
-
-}
-
-}
-
 World::World()
 {
    #if JUCE_MAC

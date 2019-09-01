@@ -296,8 +296,11 @@ public:
         );
     }
 
-    void idle() {
-        if (! idleIface || ! instance)
+    void haveIdleInterface() const { return nullptr != idleIface && nullptr != instance; }
+    
+    void idle() 
+    {
+        if (! haveIdleInterface())
             return;
         idleIface->idle ((LV2UI_Handle) suil_instance_get_handle (instance));
     }
@@ -315,9 +318,7 @@ private:
     LV2_Feature parent { LV2_UI__parent, nullptr };
 
     ModuleUI (World& w, Module& m)
-        : world (w), module (m) { 
-
-        }
+        : world (w), module (m) { }
 
     World& world;
     Module& module;
