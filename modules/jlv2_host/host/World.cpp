@@ -58,6 +58,7 @@ World::World()
     lilv_world_set_option (world, LILV_OPTION_DYN_MANIFEST, trueNode);
 
     lilv_world_load_all (world);
+    suil_init (nullptr, nullptr, SUIL_ARG_NONE);
     suil = suil_host_new (ModuleUI::portWrite,
                           ModuleUI::portIndex, 0, 0);
 

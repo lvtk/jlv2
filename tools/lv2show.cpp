@@ -57,6 +57,7 @@ public:
                 editor = plugin->createEditorIfNeeded();
             else
                 editor = new GenericAudioProcessorEditor (instance);
+            
             window.reset (new PluginWindow (*plugin));
             window->setUsingNativeTitleBar (true);
             window->setName (plugin->getName());

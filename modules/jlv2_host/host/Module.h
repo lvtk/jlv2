@@ -296,7 +296,7 @@ public:
         );
     }
 
-    void haveIdleInterface() const { return nullptr != idleIface && nullptr != instance; }
+    bool haveIdleInterface() const { return nullptr != idleIface && nullptr != instance; }
     
     void idle() 
     {
