@@ -203,7 +203,6 @@ private:
     HeapBlock<uint8> ntbuf;
     uint32 ntbufsize;
 
-    Result allocateEventBuffers();
     void activatePorts();
     void freeInstance();
     void init();

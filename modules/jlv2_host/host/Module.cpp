@@ -62,7 +62,7 @@ public:
     {
         const LilvNode* uri = lilv_ui_get_uri (uiNode);
         const LilvPlugin* plugin = owner.getPlugin();
-        
+
         auto uiptr = std::unique_ptr<ModuleUI> (new ModuleUI (owner.getWorld(), owner));
         uiptr->containerType = lilv_node_as_uri (containerType);
         uiptr->plugin = lilv_node_as_uri (lilv_plugin_get_uri (plugin));
@@ -157,12 +157,15 @@ public:
 private:
     friend class Module;
     Module& owner;
-    SuilHost* suil;
-    SuilInstance* instanceUI = 0;
     PortList ports;
     ChannelConfig channels;
-    HeapBlock<float> mins, maxes, defaults;
+
+    String name;    ///< Plugin name
+    String author;  ///< Plugin author name
+
     ModuleUI::Ptr ui;
+
+    HeapBlock<float> mins, maxes, defaults;    
     OwnedArray<PortBuffer> buffers;
 };
 
@@ -268,6 +271,20 @@ void Module::init()
         lilv_world_load_resource (world.getWorld(), res);
     }
     lilv_nodes_free (related);
+
+    // plugin name
+    if (LilvNode* node = lilv_plugin_get_name (plugin))
+    {
+        priv->name = String::fromUTF8 (lilv_node_as_string (node));
+        lilv_node_free (node);
+    }
+
+    // author name
+    if (LilvNode* node = lilv_plugin_get_author_name (plugin))
+    {
+        priv->author = String::fromUTF8 (lilv_node_as_string (node));
+        lilv_node_free (node);
+    }
 }
 
 
@@ -426,14 +443,6 @@ void Module::setSampleRate (double newSampleRate)
     }
 }
 
-Result Module::allocateEventBuffers()
-{
-   for (int i = 0; i < numPorts; ++i)
-   { }
-
-   return Result::ok();
-}
-
 void Module::connectChannel (const PortType type, const int32 channel, void* data, const bool isInput)
 {
     connectPort (priv->channels.getPort (type, channel, isInput), data);
@@ -444,16 +453,8 @@ void Module::connectPort (uint32 port, void* data)
     lilv_instance_connect_port (instance, port, data);
 }
 
-String Module::getAuthorName() const
-{
-   if (LilvNode* node = lilv_plugin_get_author_name (plugin))
-   {
-       String name (CharPointer_UTF8 (lilv_node_as_string (node)));
-       lilv_node_free (node);
-       return name;
-   }
-   return String();
-}
+String Module::getName()        const { return priv->name; }
+String Module::getAuthorName()  const { return priv->author; }
 
 const ChannelConfig& Module::getChannelConfig() const
 {
@@ -478,35 +479,26 @@ LV2_Handle Module::getHandle()
     return instance ? lilv_instance_get_handle (instance) : nullptr;
 }
 
-String Module::getName() const
-{
-   if (LilvNode* node = lilv_plugin_get_name (plugin))
-   {
-       String name = CharPointer_UTF8 (lilv_node_as_string (node));
-       lilv_node_free (node);
-       return name;
-   }
-
-   return String();
-}
-
 uint32 Module::getNumPorts() const { return numPorts; }
 
 uint32 Module::getNumPorts (PortType type, bool isInput) const
 {
-   if (type == PortType::Unknown)
-       return 0;
+    return static_cast<uint32> (priv->ports.size (type, isInput));
+    #if 0
+    if (type == PortType::Unknown)
+        return 0;
 
-   const LilvNode* flow = isInput ? world.lv2_InputPort : world.lv2_OutputPort;
-   const LilvNode* kind = type == PortType::Audio ? world.lv2_AudioPort
+    const LilvNode* flow = isInput ? world.lv2_InputPort : world.lv2_OutputPort;
+    const LilvNode* kind = type == PortType::Audio ? world.lv2_AudioPort
                         : type == PortType::Atom  ? world.lv2_AtomPort
                         : type == PortType::Control ? world.lv2_ControlPort
                         : type == PortType::CV ? world.lv2_CVPort : nullptr;
 
-   if (kind == nullptr || flow == nullptr)
-       return 0;
+    if (kind == nullptr || flow == nullptr)
+        return 0;
 
-   return lilv_plugin_get_num_ports_of_class (plugin, kind, flow, nullptr);
+    return lilv_plugin_get_num_ports_of_class (plugin, kind, flow, nullptr);
+   #endif
 }
 
 const LilvPort* Module::getPort (uint32 port) const
