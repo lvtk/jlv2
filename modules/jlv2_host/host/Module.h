@@ -310,7 +310,7 @@ public:
         
         hostResizeData.handle = this;
         hostResizeData.ui_resize = ModuleUI::hostResize;
-        resizeFeature.data = (void*) &hostResize;
+        resizeFeature.data = (void*) &hostResizeData;
         features.add (&resizeFeature);
 
         // terminate the array

@@ -120,7 +120,7 @@ public:
           module (module_)
     {
         LV2_URID_Map* map = nullptr;
-        if (LV2Feature* feat = world.getFeatureArray().getFeature (LV2_URID__map))
+        if (LV2Feature* feat = world.getFeatures().getFeature (LV2_URID__map))
             map = (LV2_URID_Map*) feat->getFeature()->data;
 
         jassert (map != nullptr);
@@ -396,7 +396,8 @@ public:
             jassert (native);
             addAndMakeVisible (native.get());
 
-            setSize (640, 360);
+            setSize (ui->getClientWidth() > 0 ?  ui->getClientWidth() : 240,
+                     ui->getClientHeight() > 0 ? ui->getClientHeight() : 100);
             startTimerHz (60);
             setResizable (true, false);
         }
@@ -431,7 +432,6 @@ public:
             removeChildComponent (widget.get());
             widget.clear();
         }
-        
         
         plugin.editorBeingDeleted (this);
         if (ui)

@@ -83,7 +83,7 @@ public:
     inline void addFeature (LV2Feature* feat, bool rebuild = true) { features.add (feat, rebuild); }
 
     /** Get supported features */
-    inline LV2FeatureArray& getFeatureArray() { return features; }
+    inline LV2FeatureArray& getFeatures() { return features; }
 
     /** Get supported features as a juce array.
         This can be used when instantiating plugins and uis. Don't

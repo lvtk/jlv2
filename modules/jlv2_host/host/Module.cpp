@@ -311,8 +311,8 @@ String Module::getStateString() const
     if (instance == nullptr)
         return String();
     
-    auto* const map = (LV2_URID_Map*) world.getFeatureArray().getFeature (LV2_URID__map)->getFeature()->data;
-    auto* const unmap = (LV2_URID_Unmap*) world.getFeatureArray().getFeature (LV2_URID__unmap)->getFeature()->data;
+    auto* const map = (LV2_URID_Map*) world.getFeatures().getFeature (LV2_URID__map)->getFeature()->data;
+    auto* const unmap = (LV2_URID_Unmap*) world.getFeatures().getFeature (LV2_URID__unmap)->getFeature()->data;
     const String descURI = "http://kushview.net/kv/state";
 
     String result;
@@ -338,8 +338,8 @@ void Module::setStateString (const String& stateStr)
 {
     if (instance == nullptr)
         return;
-    auto* const map = (LV2_URID_Map*) world.getFeatureArray().getFeature (LV2_URID__map)->getFeature()->data;
-    auto* const unmap = (LV2_URID_Unmap*) world.getFeatureArray().getFeature (LV2_URID__unmap)->getFeature()->data;
+    auto* const map = (LV2_URID_Map*) world.getFeatures().getFeature (LV2_URID__map)->getFeature()->data;
+    auto* const unmap = (LV2_URID_Unmap*) world.getFeatures().getFeature (LV2_URID__unmap)->getFeature()->data;
     if (auto* state = lilv_state_new_from_string (world.getWorld(), map, stateStr.toRawUTF8()))
     {
         const LV2_Feature* const features[] = { nullptr };
@@ -664,7 +664,7 @@ ModuleUI* Module::createEditor()
                 instance = priv->createUI (uiNode,
                     world.ui_JUCEUI, 
                     world.ui_JUCEUI,
-                    world.getFeatureArray().getFeatures());
+                    world.getFeatures().getFeatures());
                 break;
             }
             else if (quality == 2)
@@ -673,7 +673,7 @@ ModuleUI* Module::createEditor()
                 instance = priv->createUI (uiNode,
                     world.getNativeWidgetType(),
                     world.getNativeWidgetType(),
-                    world.getFeatureArray().getFeatures());
+                    world.getFeatures().getFeatures());
                 break;
             }
         }
