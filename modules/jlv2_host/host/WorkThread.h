@@ -31,13 +31,13 @@ public:
     WorkThread (const String& name, uint32 bufsize, int32 priority = 5);
     ~WorkThread();
 
-    inline static uint32 requiredSpace (uint32 msgSize) { return msgSize + (2 * sizeof (uint32)); }
+    inline static uint32 getRequiredSpace (uint32 msgSize) { return msgSize + (2 * sizeof (uint32)); }
 
 protected:
     friend class WorkerBase;
 
     /** Register a worker for scheduling. Does not take ownership */
-    void registerWorker (WorkerBase* worker);
+    void addWorker (WorkerBase* worker);
 
     /** Deregister a worker from scheduling. Does not delete the worker */
     void removeWorker (WorkerBase* worker);
@@ -53,8 +53,6 @@ private:
     Array<WorkerBase*, CriticalSection> workers;
 
     uint32 nextWorkId;
-
-    // Semaphore sem;
     bool doExit = false;
 
     ScopedPointer<RingBuffer> requests;  ///< requests to process

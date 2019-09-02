@@ -58,7 +58,7 @@ WorkerBase* WorkThread::getWorker (uint32 workerId) const
     return nullptr;
 }
 
-void WorkThread::registerWorker (WorkerBase* worker)
+void WorkThread::addWorker (WorkerBase* worker)
 {
     worker->workId = ++nextWorkId;
     WORKER_LOG (getThreadName() + " registering worker: " + String (worker->workId));
@@ -139,7 +139,7 @@ void WorkThread::run()
 bool WorkThread::scheduleWork (WorkerBase* worker, uint32 size, const void* data)
 {
     jassert (size > 0 && worker && worker->workId != 0);
-    if (! requests->canWrite (requiredSpace (size)))
+    if (! requests->canWrite (getRequiredSpace (size)))
         return false;
 
     if (requests->write (&size, sizeof(size)) < sizeof (uint32))
@@ -159,7 +159,7 @@ bool WorkThread::validateMessage (RingBuffer& ring)
 {
     uint32 size = 0;
     ring.peak (&size, sizeof (size));
-    return ring.canRead (requiredSpace (size));
+    return ring.canRead (getRequiredSpace (size));
 }
 
 WorkerBase::WorkerBase (WorkThread& thread, uint32 bufsize)
@@ -167,7 +167,7 @@ WorkerBase::WorkerBase (WorkThread& thread, uint32 bufsize)
 {
     responses = new RingBuffer (bufsize);
     response.calloc (bufsize);
-    thread.registerWorker (this);
+    thread.addWorker (this);
 }
 
 WorkerBase::~WorkerBase()

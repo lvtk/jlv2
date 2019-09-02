@@ -303,6 +303,7 @@ public:
         if (loaded())
             return;
         
+        suil_instance_extension_data (instance, LV2_UI__)
         Array<const LV2_Feature*> features;
         world.getFeatures (features);
         if (parent.data != nullptr)
@@ -318,6 +319,9 @@ public:
             instanceFeature.data = (void*) handle;
             features.add (&instanceFeature);
         }
+
+        dataFeatureData.data_access = ModuleUI::dataAccess;
+        dataFeature.data = &dataFeatureData;
 
         // terminate the array
         features.add (nullptr);
@@ -382,6 +386,8 @@ private:
     LV2UI_Resize hostResizeData;
     LV2UI_Resize* clientResize = nullptr;
     LV2_Feature instanceFeature { LV2_INSTANCE_ACCESS_URI, nullptr };
+    LV2_Feature dataFeature { LV2_DATA_ACCESS_URI, nullptr };
+    LV2_Extension_Data_Feature dataFeatureData;
 
     int clientWidth = 0;
     int clientHeight = 0;
@@ -399,6 +405,12 @@ private:
     String widgetType {};
     String bundlePath {};
     String binaryPath {};
+
+    static const void* dataAccess (const char* uri)
+    {
+        ignoreUnused (uri);
+        return nullptr;
+    }
 
     static int hostResize (LV2UI_Feature_Handle handle, int width, int height)
     {
