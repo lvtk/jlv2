@@ -35,7 +35,7 @@
 */
 
 #pragma once
-#define JLV2_H_INCLUDED
+#define JLV2_HOST_H_INCLUDED
 
 #include <juce_core/juce_core.h>
 #include <juce_audio_processors/juce_audio_processors.h>

@@ -303,23 +303,27 @@ public:
         if (loaded())
             return;
         
-        suil_instance_extension_data (instance, LV2_UI__)
         Array<const LV2_Feature*> features;
         world.getFeatures (features);
+
+        // parent
         if (parent.data != nullptr)
             features.add (&parent);
         
+        // resize host side
         hostResizeData.handle = this;
         hostResizeData.ui_resize = ModuleUI::hostResize;
         resizeFeature.data = (void*) &hostResizeData;
         features.add (&resizeFeature);
 
+        // instance access
         if (auto handle = module.getHandle())
         {
             instanceFeature.data = (void*) handle;
             features.add (&instanceFeature);
         }
 
+        // data access
         dataFeatureData.data_access = ModuleUI::dataAccess;
         dataFeature.data = &dataFeatureData;
 
@@ -336,6 +340,16 @@ public:
             binaryPath.toRawUTF8(),
             features.getRawDataPointer()
         );
+
+        // Nullify all UI extensions
+        clientResize = nullptr;
+
+        if (nullptr == instance)
+            return;
+
+        // resize - plugin side
+        if (const auto* data = suil_instance_extension_data (instance, LV2_UI__resize))
+            clientResize = (LV2UI_Resize*) data;
     }
 
     /** Returns true if the plugin provided LV2_UI__idleInterface */
