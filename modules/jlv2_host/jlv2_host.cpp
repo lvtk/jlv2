@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016  Michael Fisher <mfisher@kushview.net>
+    Copyright (C) 2014-2019  Michael Fisher <mfisher@kushview.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
  */
  #error "Incorrect use of JUCE cpp file"
 #endif
+
+#if JLV2_PLUGINHOST_LV2
 
 #include "jlv2_host/jlv2_host.h"
 
@@ -70,3 +72,5 @@ class ModuleUI;
 #include "host/WorkerFeature.cpp"
 #include "host/WorkThread.cpp"
 #include "host/World.cpp"
+
+#endif

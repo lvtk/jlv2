@@ -37,6 +37,16 @@
 #pragma once
 #define JLV2_HOST_H_INCLUDED
 
+//==============================================================================
+/** Config: JLV2_PLUGINHOST_LV2
+
+    Enable LV2 hosting support.  This option exists so LV2 can be disabled in build
+    configurations that don't need or support it.  Default is enabled
+*/
+#ifndef JLV2_PLUGINHOST_LV2
+ #define JLV2_PLUGINHOST_LV2 1
+#endif
+
 #include <juce_core/juce_core.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_extra/juce_gui_extra.h>
