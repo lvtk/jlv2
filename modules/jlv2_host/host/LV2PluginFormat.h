@@ -39,8 +39,9 @@ public:
     FileSearchPath getDefaultLocationsToSearch() override;
 
 protected:
-    void createPluginInstance (const PluginDescription&, double initialSampleRate,
-                               int initialBufferSize, void* userData,
+    void createPluginInstance (const PluginDescription&,
+                               double initialSampleRate,
+                               int initialBufferSize,
                                PluginCreationCallback) override;
 
     bool requiresUnblockedMessageThreadDuringCreation (const PluginDescription&) const noexcept override { return false; }
