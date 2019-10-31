@@ -570,7 +570,7 @@ void LV2PluginFormat::findAllTypesForFile (OwnedArray <PluginDescription>& resul
 
     try
     {
-        ScopedPointer<AudioPluginInstance> instance (createInstanceFromDescription (*desc.get(), 44100.0, 1024));
+        auto instance (createInstanceFromDescription (*desc.get(), 44100.0, 1024));
         if (LV2PluginInstance* const p = dynamic_cast <LV2PluginInstance*> (instance.get()))
         {
             p->fillInPluginDescription (*desc.get());
@@ -641,12 +641,12 @@ bool LV2PluginFormat::doesPluginStillExist (const PluginDescription& desc)
 }
 
 void LV2PluginFormat::createPluginInstance (const PluginDescription& desc, double initialSampleRate,
-                                            int initialBufferSize, void* userData,
+                                            int initialBufferSize,
                                             PluginCreationCallback callback)
 {
     if (desc.pluginFormatName != String ("LV2"))
     {
-        callback (userData, nullptr, "Not an LV2 plugin");
+        callback (nullptr, "Not an LV2 plugin");
         return;
     }
 
@@ -655,19 +655,19 @@ void LV2PluginFormat::createPluginInstance (const PluginDescription& desc, doubl
         Result res (module->instantiate (initialSampleRate));
         if (res.wasOk())
         {
-            auto instance = std::unique_ptr<LV2PluginInstance> (new LV2PluginInstance (*priv->world, module));
-            callback (userData, instance.release(), {});
+            AudioPluginInstance* i = new LV2PluginInstance (*priv->world, module);
+            callback (std::unique_ptr<AudioPluginInstance> (i), {});
         }
         else
         {
             deleteAndZero (module);
-            callback (userData, nullptr, res.getErrorMessage());
+            callback (nullptr, res.getErrorMessage());
         }
     }
     else
     {
         JUCE_LV2_LOG ("Failed creating LV2 plugin instance");
-        callback (userData, nullptr, "Failed creating LV2 plugin instance");
+        callback (nullptr, "Failed creating LV2 plugin instance");
     }
 }
 
