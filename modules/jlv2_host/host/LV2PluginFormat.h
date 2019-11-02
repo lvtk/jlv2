@@ -37,6 +37,7 @@ public:
     StringArray searchPathsForPlugins (const FileSearchPath&, bool recursive,
                                        bool allowPluginsWhichRequireAsynchronousInstantiation = false) override;
     FileSearchPath getDefaultLocationsToSearch() override;
+    bool isTrivialToScan() const override { return true; }
 
 protected:
     void createPluginInstance (const PluginDescription&,
