@@ -47,6 +47,14 @@
  #define JLV2_PLUGINHOST_LV2 1
 #endif
 
+/** Config: JLV2_SUIL_INIT
+
+    Disable this if you have a suil version less than 0.10.0
+*/
+#ifndef JLV2_SUIL_INIT
+ #define JLV2_SUIL_INIT 1
+#endif
+
 #include <juce_core/juce_core.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_extra/juce_gui_extra.h>

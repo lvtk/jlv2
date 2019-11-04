@@ -57,7 +57,9 @@ World::World()
     lilv_world_set_option (world, LILV_OPTION_DYN_MANIFEST, trueNode);
 
     lilv_world_load_all (world);
+   #if JLV2_SUIL_INIT
     suil_init (nullptr, nullptr, SUIL_ARG_NONE);
+   #endif
     suil = suil_host_new (ModuleUI::portWrite,
                           ModuleUI::portIndex,
                           ModuleUI::portSubscribe,
