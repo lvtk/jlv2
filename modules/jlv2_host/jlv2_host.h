@@ -55,9 +55,7 @@
  #define JLV2_SUIL_INIT 1
 #endif
 
-#include <juce_core/juce_core.h>
 #include <juce_audio_processors/juce_audio_processors.h>
-#include <juce_gui_extra/juce_gui_extra.h>
 
 #ifndef JLV2_API
  #define JLV2_API JUCE_API  /**< This macro is added to all JUCE public class declarations. */

@@ -114,7 +114,7 @@ public:
 
     void getSupportedPlugins (StringArray&) const;
 
-    inline SuilHost* getSuilHost() { return suil; }
+    inline SuilHost* getSuilHost() const { return suil; }
 
     inline const LilvNode* getNativeWidgetType() const
     {

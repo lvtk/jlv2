@@ -390,7 +390,14 @@ public:
            #if JUCE_MAC
             native.reset (new NSViewComponent());
            #elif JUCE_LINUX
-            native.reset (new XEmbedComponent (true, false));
+            ui->instantiate();
+            GtkWidget* plug = gtk_plug_new (0);
+            GtkWidget* uiw = (GtkWidget*) ui->getWidget();
+            gtk_container_add (GTK_CONTAINER (plug), uiw);
+            gtk_widget_show_all (plug);
+            native.reset (new XEmbedComponent (
+                (unsigned long) gtk_plug_get_id (GTK_PLUG (plug)),
+                true, false));
            #endif
 
             jassert (native);
@@ -516,26 +523,28 @@ AudioProcessorEditor* LV2PluginInstance::createEditor()
 }
 
 //=============================================================================
-class LV2PluginFormat::Internal
+class LV2PluginFormat::Internal : private Timer
 {
 public:
     Internal()
     {
         useExternalData = false;
-        world.setOwned (new World ());
         init();
+        world.setOwned (new World ());
+        startTimerHz (60);
     }
 
     Internal (World& w)
     {
         useExternalData = true;
-        world.setNonOwned (&w);
         init();
+        world.setNonOwned (&w);
     }
 
     ~Internal()
     {
         world.clear();
+        stopTimer();
     }
 
     Module* createModule (const String& uri)
@@ -548,7 +557,22 @@ public:
 
 private:
     bool useExternalData;
-    void init() { }
+
+    void init()
+    {
+       #if JUCE_LINUX
+        gtk_init (nullptr, nullptr);
+       #endif
+    }
+    
+    void timerCallback() override
+    {
+       #if JUCE_LINUX
+        gtk_main_iteration_do (false);
+       #else
+        stopTimer();
+       #endif
+    }
 };
 
 //=============================================================================

@@ -25,6 +25,7 @@
  #error "Incorrect use of JUCE cpp file"
 #endif
 
+#include <juce_gui_extra/juce_gui_extra.h>
 #include "jlv2_host/jlv2_host.h"
 
 #if JLV2_PLUGINHOST_LV2
@@ -46,6 +47,8 @@
 
 #include <lilv/lilv.h>
 #include <suil/suil.h>
+
+#include <gtk/gtk.h>
 
 namespace jlv2 {
 class Module;

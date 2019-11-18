@@ -51,9 +51,9 @@ public:
     ~Private() { }
 
     ModuleUI* createUI (const LilvUI* uiNode,
-                             const LilvNode* containerType,
-                             const LilvNode* widgetType,
-                             const LV2_Feature* const * features)
+                        const LilvNode* containerType,
+                        const LilvNode* widgetType,
+                        const LV2_Feature* const * features)
     {
         const LilvNode* uri = lilv_ui_get_uri (uiNode);
         const LilvPlugin* plugin = owner.getPlugin();
@@ -64,9 +64,18 @@ public:
         uiptr->ui = lilv_node_as_uri (uri);
         uiptr->widgetType = lilv_node_as_uri (widgetType);
         uiptr->bundlePath = lilv_uri_to_path (lilv_node_as_uri (lilv_ui_get_bundle_uri (uiNode)));
-        uiptr->binaryPath = lilv_uri_to_path (lilv_node_as_uri (lilv_ui_get_binary_uri (uiNode)));
-        ui = uiptr.release();
+        if (const auto* binaryURINode = lilv_ui_get_binary_uri (uiNode))
+        {
+            DBG(lilv_node_as_uri (binaryURINode));
+            if (const auto* binaryURI = lilv_node_as_uri (binaryURINode))
+            {
+                DBG("binary uri = " << binaryURI);
+                if (const auto* binaryPath = lilv_uri_to_path (binaryURI))
+                    uiptr->binaryPath = lilv_uri_to_path (binaryPath);
 
+            }        
+        }
+        ui = uiptr.release();
         return ui;
     }
 
@@ -604,8 +613,8 @@ bool Module::hasEditor() const
     
     LILV_FOREACH (uis, iter, uis)
     {
-        const LilvUI* ui = lilv_uis_get (uis, iter);
-        const auto uri = String::fromUTF8 (lilv_node_as_string (lilv_ui_get_uri (ui)));
+        const LilvUI* lui = lilv_uis_get (uis, iter);
+        const auto uri = String::fromUTF8 (lilv_node_as_string (lilv_ui_get_uri (lui)));
         
         bool hasShow = false;
         bool hasIdle = false;
@@ -638,18 +647,19 @@ bool Module::hasEditor() const
         }
 
         // Check JUCE UI
-        if (lilv_ui_is_a (ui, world.ui_JUCEUI))
+        if (lilv_ui_is_a (lui, world.ui_JUCEUI))
         {
             auto* const supported = suplist.add (new SupportedUI());
             supported->URI = uri;
             supported->container = JLV2__JUCEUI;
             supported->widget = JLV2__JUCEUI;
+            supported->handle = lui;
             continue;
         }
 
         // check if native UI
         const LilvNode* uitype = nullptr;
-        if (lilv_ui_is_supported (ui, suil_ui_supported, world.getNativeWidgetType(), &uitype))
+        if (lilv_ui_is_supported (lui, suil_ui_supported, world.getNativeWidgetType(), &uitype))
         {
             if (uitype != nullptr && lilv_node_is_uri (uitype))
             {
@@ -657,13 +667,14 @@ bool Module::hasEditor() const
                 supported->URI = uri;
                 supported->container = JLV2__NativeUI;
                 supported->widget = String::fromUTF8 (lilv_node_as_uri (uitype));
+                supported->handle =  lui;
                 continue;
             }
         }
 
         // Check for Gtk2
         uitype = nullptr;
-        if (lilv_ui_is_supported (ui, suil_ui_supported, world.ui_GtkUI, &uitype))
+        if (lilv_ui_is_supported (lui, suil_ui_supported, world.ui_GtkUI, &uitype))
         {
             if (uitype != nullptr && lilv_node_is_uri (uitype))
             {
@@ -671,6 +682,7 @@ bool Module::hasEditor() const
                 supported->URI = uri;
                 supported->container = LV2_UI__GtkUI;
                 supported->widget = String::fromUTF8 (lilv_node_as_uri (uitype));           
+                supported->handle = lui;
                #if ! JUCE_LINUX
                 supported->useShowInterface = hasShow;
                #endif  
@@ -724,35 +736,21 @@ ModuleUI* Module::createEditor()
     
     ModuleUI* instance = nullptr;
 
-    if (LilvUIs* uis = lilv_plugin_get_uis (plugin))
+    for (const auto* const u : supportedUIs)
     {
-        LILV_FOREACH(uis, iter, uis)
+       #if JUCE_LINUX
+        if (u->container == LV2_UI__GtkUI &&
+            u->widget == LV2_UI__Qt5UI)
         {
-            const LilvUI* uiNode = lilv_uis_get (uis, iter);
-            const unsigned quality = lilv_ui_is_supported (uiNode, &Callbacks::uiSupported, world.ui_JUCEUI, nullptr);
-            const auto uri = String::fromUTF8 (lilv_node_as_string (lilv_ui_get_uri (uiNode)));
+            instance = priv->createUI ((const LilvUI*) u->handle,
+                    world.ui_GtkUI, world.ui_Qt5UI,
+                    world.getFeatures().getFeatures());
 
-            if (quality == 1)
-            {
-                // JUCEUI 
-                instance = priv->createUI (uiNode,
-                    world.ui_JUCEUI, 
-                    world.ui_JUCEUI,
-                    world.getFeatures().getFeatures());
-                break;
-            }
-            else if (quality == 2)
-            {
-                // Native UI (CocoaUI, WindowsUI, or X11UI)
-                instance = priv->createUI (uiNode,
-                    world.getNativeWidgetType(),
-                    world.getNativeWidgetType(),
-                    world.getFeatures().getFeatures());
-                break;
-            }
         }
+       #endif
 
-        lilv_uis_free (uis);
+        if (instance != nullptr)
+            break;
     }
 
     if (instance != nullptr)

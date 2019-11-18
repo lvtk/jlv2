@@ -27,6 +27,7 @@ struct SupportedUI
     String container;
     String widget;
     bool useShowInterface { false };
+    const LilvUI* handle { nullptr }; // Pointer to a LilvUI*
 };
 
 /** A wrapper around LilvPlugin/LilvInstance for running LV2 plugins

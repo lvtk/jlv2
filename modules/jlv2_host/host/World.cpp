@@ -75,7 +75,7 @@ World::World()
     numThreads    = JLV2_NUM_WORKERS;
     for (int i = 0; i < numThreads; ++i)
     {
-        threads.add (new WorkThread ("lv2_worker_ " + String(i + 1), 2048));
+        threads.add (new WorkThread ("lv2_worker_" + String(i + 1), 2048));
         threads.getLast()->setPriority (5);
     }
 
