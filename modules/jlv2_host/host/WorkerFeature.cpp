@@ -77,7 +77,7 @@ void WorkerFeature::processRequest (uint32 size, const void* requestData)
 
 void WorkerFeature::processResponse (uint32 size, const void* responseData)
 {
-    jassert (worker != nullptr && plugin != nullptr);
+    jassert (worker != nullptr && worker->work_response != nullptr && plugin != nullptr);
     worker->work_response (plugin, size, responseData);
 }
 

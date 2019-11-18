@@ -313,6 +313,11 @@ public:
        #endif
     }
 
+    bool hasContainerType (const String& type) const
+    {
+        return containerType == type;
+    }
+
     bool isA (const String& widgetTypeURI) const
     {
         return widgetTypeURI == widgetType;

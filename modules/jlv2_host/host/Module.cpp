@@ -50,15 +50,16 @@ public:
 
     ~Private() { }
 
-    ModuleUI* createModuleUI (const SupportedUI& ui)
+    ModuleUI* createModuleUI (const SupportedUI& supportedUI)
     {
         auto* uiptr = new ModuleUI (owner.getWorld(), owner);
-        uiptr->ui               = ui.URI;
-        uiptr->plugin           = ui.plugin;
-        uiptr->containerType    = ui.container;
-        uiptr->widgetType       = ui.widget;
-        uiptr->bundlePath       = ui.bundle;
-        uiptr->binaryPath       = ui.binary;
+        uiptr->ui               = supportedUI.URI;
+        uiptr->plugin           = supportedUI.plugin;
+        uiptr->containerType    = supportedUI.container;
+        uiptr->widgetType       = supportedUI.widget;
+        uiptr->bundlePath       = supportedUI.bundle;
+        uiptr->binaryPath       = supportedUI.binary;
+        this->ui = uiptr;
         return uiptr;
     }
 
@@ -726,10 +727,8 @@ ModuleUI* Module::createEditor()
     for (const auto* const u : supportedUIs)
     {
        #if JUCE_LINUX
-        if (u->container == LV2_UI__GtkUI && u->widget == LV2_UI__Qt5UI)
-        {
+        if (u->container == LV2_UI__GtkUI)
             instance = priv->createModuleUI (*u);
-        }
        #endif
 
         if (instance != nullptr)

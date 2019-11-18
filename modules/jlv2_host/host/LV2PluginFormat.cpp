@@ -390,14 +390,7 @@ public:
            #if JUCE_MAC
             native.reset (new NSViewComponent());
            #elif JUCE_LINUX
-            ui->instantiate();
-            GtkWidget* plug = gtk_plug_new (0);
-            GtkWidget* uiw = (GtkWidget*) ui->getWidget();
-            gtk_container_add (GTK_CONTAINER (plug), uiw);
-            gtk_widget_show_all (plug);
-            native.reset (new XEmbedComponent (
-                (unsigned long) gtk_plug_get_id (GTK_PLUG (plug)),
-                true, false));
+            
            #endif
 
             jassert (native);
@@ -408,6 +401,36 @@ public:
             startTimerHz (60);
             setResizable (true, false);
         }
+       #if JUCE_LINUX
+        else if (ui && ui->hasContainerType (LV2_UI__GtkUI))
+        {
+            
+            ui->onClientResize = [this]() -> int {
+                setSize (jmax (1, ui->getClientWidth()), jmax (1, ui->getClientHeight()));
+                return 0;
+            };
+            ui->instantiate();
+
+            GtkWidget* plug = gtk_plug_new (0);
+            GtkWidget* uiw = (GtkWidget*) ui->getWidget();
+            
+            GtkAllocation rect;
+            gtk_container_add (GTK_CONTAINER (plug), uiw);
+            gtk_widget_show_all (plug);
+            
+            gtk_widget_get_allocation (uiw, &rect);
+            setSize (jmax (10, rect.width), jmax (10, rect.height));
+            DBG("gtk w = " << rect.width);
+            DBG("gtk h = " << rect.height);
+            
+            native.reset (new XEmbedComponent (
+                (unsigned long) gtk_plug_get_id (GTK_PLUG (plug)),
+                true, true));
+            
+            setResizable (true, true);
+            addAndMakeVisible (native.get());
+        }
+       #endif
         else
         {
             widget.setNonOwned ((Component*) ui->getWidget());
@@ -492,10 +515,8 @@ public:
 
     void resized() override
     {
-        if (ui->isNative())
-        {
+        if (native != nullptr)
             native->setBounds (getLocalBounds());
-        }
 
         if (widget)
             widget->setBounds (0, 0, widget->getWidth(), widget->getHeight());
