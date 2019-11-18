@@ -49,6 +49,10 @@ World::World()
     work_interface  = lilv_new_uri (world, LV2_WORKER__interface);
     ui_CocoaUI      = lilv_new_uri (world, LV2_UI__CocoaUI);
     ui_X11UI        = lilv_new_uri (world, LV2_UI__X11UI);
+    ui_GtkUI        = lilv_new_uri (world, LV2_UI__GtkUI);
+    ui_Gtk3UI       = lilv_new_uri (world, LV2_UI__Gtk3UI);
+    ui_Qt4UI        = lilv_new_uri (world, LV2_UI__Qt4UI);
+    ui_Qt5UI        = lilv_new_uri (world, LV2_UI__Qt5UI);
     ui_JUCEUI       = lilv_new_uri (world, LVTK__JUCEUI);
     ui_UI           = lilv_new_uri (world, LV2_UI__UI);
     trueNode        = lilv_new_bool (world, true);

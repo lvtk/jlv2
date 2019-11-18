@@ -47,6 +47,10 @@ public:
     const LilvNode*   ui_CocoaUI;
     const LilvNode*   ui_WindowsUI;
     const LilvNode*   ui_X11UI;
+    const LilvNode*   ui_GtkUI;
+    const LilvNode*   ui_Gtk3UI;
+    const LilvNode*   ui_Qt4UI;
+    const LilvNode*   ui_Qt5UI;
     const LilvNode*   ui_JUCEUI;
     const LilvNode*   ui_UI;
     const LilvNode*   trueNode;
