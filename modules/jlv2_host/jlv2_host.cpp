@@ -48,7 +48,9 @@
 #include <lilv/lilv.h>
 #include <suil/suil.h>
 
-#include <gtk/gtk.h>
+#if JUCE_LINUX
+ #include <gtk/gtk.h>
+#endif
 
 namespace jlv2 {
 class Module;

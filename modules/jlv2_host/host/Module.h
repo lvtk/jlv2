@@ -20,14 +20,18 @@
 
 namespace jlv2 {
 
+/** Description of a supported UI */
 struct SupportedUI
 {
-    String URI;
-    String name;
-    String container;
-    String widget;
+    String URI;         // The UIs URI
+    String plugin;      // the plugin URI
+    String container;   // container type URI
+    String widget;      // widget type URI
+    String bundle;      // Bundle path
+    String binary;      // Binary path
+
+    // UI provides show interface
     bool useShowInterface { false };
-    const LilvUI* handle { nullptr }; // Pointer to a LilvUI*
 };
 
 /** A wrapper around LilvPlugin/LilvInstance for running LV2 plugins
