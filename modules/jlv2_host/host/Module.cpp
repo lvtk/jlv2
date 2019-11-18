@@ -606,6 +606,36 @@ bool Module::hasEditor() const
     {
         const LilvUI* ui = lilv_uis_get (uis, iter);
         const auto uri = String::fromUTF8 (lilv_node_as_string (lilv_ui_get_uri (ui)));
+        
+        bool hasShow = false;
+        bool hasIdle = false;
+
+        // check for extension data
+        {
+            auto* uriNode = lilv_new_uri (world.getWorld(), uri.toRawUTF8());
+            auto* extDataNode = lilv_new_uri (world.getWorld(), LV2_CORE__extensionData);
+            auto* showNode = lilv_new_uri (world.getWorld(), LV2_UI__showInterface);
+            auto* idleNode = lilv_new_uri (world.getWorld(), LV2_UI__idleInterface);
+            
+            if (auto* extNodes = lilv_world_find_nodes (world.getWorld(), uriNode, extDataNode, nullptr))
+            {
+                LILV_FOREACH(nodes, iter, extNodes)
+                {
+                    const auto* node = lilv_nodes_get (extNodes, iter);
+                    if (lilv_node_equals (node, showNode))
+                        hasShow = true;
+                    else if (lilv_node_equals (node, idleNode))
+                        hasIdle = true;
+                }
+
+                lilv_nodes_free (extNodes);
+            }
+            
+            lilv_node_free (uriNode);
+            lilv_node_free (extDataNode);
+            lilv_node_free (showNode);
+            lilv_node_free (idleNode);
+        }
 
         // Check JUCE UI
         if (lilv_ui_is_a (ui, world.ui_JUCEUI))
@@ -619,8 +649,7 @@ bool Module::hasEditor() const
 
         // check if native UI
         const LilvNode* uitype = nullptr;
-        if (lilv_ui_is_supported (ui, suil_ui_supported,
-            world.getNativeWidgetType(), &uitype))
+        if (lilv_ui_is_supported (ui, suil_ui_supported, world.getNativeWidgetType(), &uitype))
         {
             if (uitype != nullptr && lilv_node_is_uri (uitype))
             {
@@ -641,7 +670,10 @@ bool Module::hasEditor() const
                 auto* const supported = suplist.add (new SupportedUI());
                 supported->URI = uri;
                 supported->container = LV2_UI__GtkUI;
-                supported->widget = String::fromUTF8 (lilv_node_as_uri (uitype));
+                supported->widget = String::fromUTF8 (lilv_node_as_uri (uitype));           
+               #if ! JUCE_LINUX
+                supported->useShowInterface = hasShow;
+               #endif  
                 continue;
             }
         }
@@ -654,6 +686,7 @@ bool Module::hasEditor() const
         DBG("[jlv2] supported ui: " << sui->URI);
         DBG("[jlv2]    container: " << sui->container);
         DBG("[jlv2]       widget: " << sui->widget);
+        DBG("[jlv2]         show: " << (int) sui->useShowInterface);
     }
 
     return ! supportedUIs.isEmpty();

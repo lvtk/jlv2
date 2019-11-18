@@ -26,6 +26,7 @@ struct SupportedUI
     String name;
     String container;
     String widget;
+    bool useShowInterface { false };
 };
 
 /** A wrapper around LilvPlugin/LilvInstance for running LV2 plugins
@@ -190,7 +191,7 @@ public:
 
     /** Loads the default state if available */
     void loadDefaultState();
-    
+
     /** Returns an LV2 preset/state as a string */
     String getStateString() const;
 
