@@ -24,11 +24,11 @@
 #endif
 
 #if JUCE_MAC
- #define JLV2_NATIVEUI     "http://lv2plug.in/ns/extensions/ui#CocoaUI"
-#if JUCE_WINDOWS
- #define JLV2_NATIVEUI     "http://lv2plug.in/ns/extensions/ui#WindowsUI"
+ #define JLV2__NativeUI   "http://lv2plug.in/ns/extensions/ui#CocoaUI"
+#elif JUCE_WINDOWS
+ #define JLV2__NativeUI   "http://lv2plug.in/ns/extensions/ui#WindowsUI"
 #elif JUCE_LINUX
- #define JLV2_NATIVEUI     "http://lv2plug.in/ns/extensions/ui#X11UI"
+ #define JLV2__NativeUI   "http://lv2plug.in/ns/extensions/ui#X11UI"
 #endif
 
 namespace jlv2 {

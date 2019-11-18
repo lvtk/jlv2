@@ -18,25 +18,23 @@
 
 namespace jlv2 {
 
-namespace LV2Callbacks {
+enum UIQuality {
+    UI_NO_SUPPORT     = 0,    // UI not supported
+    UI_FULL_SUPPORT   = 1,    // UI directly embeddable (i.e. a juce component)
+    UI_NATIVE_EMBED   = 2     // Embeddable Native UI type
+};
+
+namespace Callbacks {
 
 inline unsigned uiSupported (const char* hostType, const char* uiType)
 {
-    String host (hostType);
-    String ui (uiType);
-
-    if (ui == "JUCEUI")
-        return 1;
-    
-   #if JUCE_MAC
-    if (ui == LV2_UI__CocoaUI)
-   #elif JUCE_WINDOWS
-    if (ui == LV2_UI__WindowsUI)
-   #else
-    if (ui == LV2_UI__X11UI)
-   #endif
+    if (strcmp (hostType, JLV2__JUCEUI) == 0)
     {
-        return 2;
+        if (strcmp (uiType, JLV2__JUCEUI) == 0)
+            return UI_FULL_SUPPORT;
+        else if (strcmp (uiType, JLV2__NativeUI))
+            return UI_NATIVE_EMBED;
+        return 0;
     }
 
     return suil_ui_supported (hostType, uiType);
@@ -574,37 +572,68 @@ bool Module::isLoaded() const { return instance != nullptr; }
 
 bool Module::hasEditor() const
 {
-    if (bestUI.isNotEmpty())
+    if (! supportedUIs.isEmpty())
         return true;
 
     LilvUIs* uis = lilv_plugin_get_uis (plugin);
     if (nullptr == uis)
         return false;
 
+    auto& suplist = const_cast<OwnedArray<SupportedUI>&> (supportedUIs);
+    
     LILV_FOREACH (uis, iter, uis)
     {
         const LilvUI* ui = lilv_uis_get (uis, iter);
-        const unsigned quality = lilv_ui_is_supported (
-            ui, &LV2Callbacks::uiSupported,
-            world.ui_JUCEUI, nullptr
-        );
-        
         const auto uri = String::fromUTF8 (lilv_node_as_string (lilv_ui_get_uri (ui)));
-        
-        if (quality == 1)
+
+        // Check JUCE UI
+        if (lilv_ui_is_a (ui, world.ui_JUCEUI))
         {
-            bestUI = uri;
-            break;
+            auto* const supported = suplist.add (new SupportedUI());
+            supported->URI = uri;
+            supported->container = JLV2__JUCEUI;
+            supported->widget = JLV2__JUCEUI;
+            continue;
         }
-        else if (quality == 2)
+
+        // check if native UI
+        const LilvNode* uitype = nullptr;
+        if (lilv_ui_is_supported (ui, suil_ui_supported,
+            world.getNativeWidgetType(), &uitype))
         {
-            nativeUI = uri;
+            if (uitype != nullptr && lilv_node_is_uri (uitype))
+            {
+                auto* const supported = suplist.add (new SupportedUI());
+                supported->URI = uri;
+                supported->container = JLV2__NativeUI;
+                supported->widget = String::fromUTF8 (lilv_node_as_uri (uitype));
+                continue;
+            }
+        }
+
+        // Check for Gtk2
+        uitype = nullptr;
+        if (lilv_ui_is_supported (ui, suil_ui_supported, world.ui_GtkUI, &uitype))
+        {
+            if (uitype != nullptr && lilv_node_is_uri (uitype))
+            {
+                auto* const supported = suplist.add (new SupportedUI());
+                supported->URI = uri;
+                supported->container = JLV2__NativeUI;
+                supported->widget = String::fromUTF8 (lilv_node_as_uri (uitype));
+                continue;
+            }
         }
     }
 
     lilv_uis_free (uis);
-    
-    return bestUI.isNotEmpty() || nativeUI.isNotEmpty();
+
+    for (const auto* sui : supportedUIs)
+    {
+        DBG("[jlv2] supported ui: " << sui->URI);
+    }
+
+    return ! supportedUIs.isEmpty();
 }
 
 void Module::clearEditor()
@@ -644,7 +673,7 @@ ModuleUI* Module::createEditor()
         LILV_FOREACH(uis, iter, uis)
         {
             const LilvUI* uiNode = lilv_uis_get (uis, iter);
-            const unsigned quality = lilv_ui_is_supported (uiNode, &LV2Callbacks::uiSupported, world.ui_JUCEUI, nullptr);
+            const unsigned quality = lilv_ui_is_supported (uiNode, &Callbacks::uiSupported, world.ui_JUCEUI, nullptr);
             const auto uri = String::fromUTF8 (lilv_node_as_string (lilv_ui_get_uri (uiNode)));
 
             if (quality == 1)

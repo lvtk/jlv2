@@ -20,6 +20,14 @@
 
 namespace jlv2 {
 
+struct SupportedUI
+{
+    String URI;
+    String name;
+    String container;
+    String widget;
+};
+
 /** A wrapper around LilvPlugin/LilvInstance for running LV2 plugins
     Methods that are realtime/thread safe are excplicity documented as so.
     All other methods are NOT realtime safe
@@ -220,6 +228,8 @@ private:
     std::unique_ptr<RingBuffer> notifications;
     HeapBlock<uint8> ntbuf;
     uint32 ntbufsize;
+
+    OwnedArray<SupportedUI> supportedUIs;
 
     void activatePorts();
     void freeInstance();
