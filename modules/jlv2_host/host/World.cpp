@@ -48,6 +48,7 @@ World::World()
     work_schedule   = lilv_new_uri (world, LV2_WORKER__schedule);
     work_interface  = lilv_new_uri (world, LV2_WORKER__interface);
     ui_CocoaUI      = lilv_new_uri (world, LV2_UI__CocoaUI);
+    ui_WindowsUI    = lilv_new_uri (world, LV2_UI__WindowsUI);
     ui_X11UI        = lilv_new_uri (world, LV2_UI__X11UI);
     ui_GtkUI        = lilv_new_uri (world, LV2_UI__GtkUI);
     ui_Gtk3UI       = lilv_new_uri (world, LV2_UI__Gtk3UI);
@@ -97,6 +98,11 @@ World::~World()
     _node_free (work_schedule);
     _node_free (work_interface);
     _node_free (ui_CocoaUI);
+    _node_free (ui_WindowsUI);
+    _node_free (ui_GtkUI);
+    _node_free (ui_Gtk3UI);
+    _node_free (ui_Qt4UI);
+    _node_free (ui_Qt5UI);
     _node_free (ui_X11UI);
     _node_free (ui_JUCEUI);
 
