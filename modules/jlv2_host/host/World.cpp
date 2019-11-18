@@ -207,7 +207,8 @@ bool World::isFeatureSupported (const String& featureURI) const
    if (features.contains (featureURI))
       return true;
 
-   if (featureURI == LV2_WORKER__schedule)
+   if (featureURI == LV2_WORKER__schedule ||
+       featureURI == LV2_STATE__loadDefaultState)
       return true;
 
    return false;

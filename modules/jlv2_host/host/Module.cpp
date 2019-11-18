@@ -304,6 +304,26 @@ void Module::init()
     }
 }
 
+void Module::loadDefaultState()
+{
+    if (instance == nullptr)
+        return;
+    
+    auto* const map = (LV2_URID_Map*) world.getFeatures().getFeature (LV2_URID__map)->getFeature()->data;
+    if (auto* uriNode = lilv_new_uri (world.getWorld(), priv->uri.toRawUTF8()))
+    {
+        if (auto* state = lilv_state_new_from_world (world.getWorld(), map, uriNode))
+        {
+            const LV2_Feature* const features[] = { nullptr };
+            lilv_state_restore (state, instance, Private::setPortValue, 
+                                priv.get(), LV2_STATE_IS_POD, features);
+            lilv_state_free (state);
+            priv->sendControlValues();
+        }
+
+        lilv_node_free (uriNode);
+    }
+}
 
 String Module::getStateString() const
 {
@@ -393,6 +413,7 @@ Result Module::instantiate (double samplerate)
         worker = nullptr;
     }
 
+    loadDefaultState();
     startTimerHz (60);
     return Result::ok();
 }
@@ -619,7 +640,7 @@ bool Module::hasEditor() const
             {
                 auto* const supported = suplist.add (new SupportedUI());
                 supported->URI = uri;
-                supported->container = JLV2__NativeUI;
+                supported->container = LV2_UI__GtkUI;
                 supported->widget = String::fromUTF8 (lilv_node_as_uri (uitype));
                 continue;
             }
@@ -628,9 +649,11 @@ bool Module::hasEditor() const
 
     lilv_uis_free (uis);
 
-    for (const auto* sui : supportedUIs)
+    for (const auto* const sui : supportedUIs)
     {
         DBG("[jlv2] supported ui: " << sui->URI);
+        DBG("[jlv2]    container: " << sui->container);
+        DBG("[jlv2]       widget: " << sui->widget);
     }
 
     return ! supportedUIs.isEmpty();
