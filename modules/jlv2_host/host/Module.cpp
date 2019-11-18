@@ -3,7 +3,7 @@
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    the Free Software Foundation; either version 3 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
@@ -33,7 +33,7 @@ inline unsigned uiSupported (const char* hostType, const char* uiType)
    #elif JUCE_WINDOWS
     if (ui == LV2_UI__WindowsUI)
    #else
-    if (ui == LV2_UI__CocoaUI)
+    if (ui == LV2_UI__X11UI)
    #endif
     {
         return 2;
@@ -278,13 +278,15 @@ void Module::init()
     }
 
     // load related GUIs
-    auto* related = lilv_plugin_get_related (plugin, world.ui_UI);
-    LILV_FOREACH (nodes, iter, related)
+    if (auto* related = lilv_plugin_get_related (plugin, world.ui_UI))
     {
-        const auto* res = lilv_nodes_get (related, iter);
-        lilv_world_load_resource (world.getWorld(), res);
+        LILV_FOREACH (nodes, iter, related)
+        {
+            const auto* res = lilv_nodes_get (related, iter);
+            lilv_world_load_resource (world.getWorld(), res);
+        }
+        lilv_nodes_free (related);
     }
-    lilv_nodes_free (related);
 
     // plugin URI
     priv->uri = String::fromUTF8 (lilv_node_as_string (lilv_plugin_get_uri (plugin)));
@@ -489,12 +491,14 @@ String Module::getClassLabel() const
 
 const void* Module::getExtensionData (const String& uri) const
 {
-    return instance ? lilv_instance_get_extension_data (instance, uri.toUTF8()) : nullptr;
+    return instance ? lilv_instance_get_extension_data (instance, uri.toUTF8())
+                    : nullptr;
 }
 
 void* Module::getHandle()
 {
-    return instance ? (void*) lilv_instance_get_handle (instance) : nullptr;
+    return instance ? (void*) lilv_instance_get_handle (instance)
+                    : nullptr;
 }
 
 uint32 Module::getNumPorts() const { return numPorts; }
@@ -514,7 +518,7 @@ uint32 Module::getMidiPort() const
    for (uint32 i = 0; i < getNumPorts(); ++i)
    {
        const LilvPort* port (getPort (i));
-       if ((lilv_port_is_a (plugin, port, world.lv2_AtomPort) || lilv_port_is_a (plugin, port, world.lv2_EventPort))&&
+       if ((lilv_port_is_a (plugin, port, world.lv2_AtomPort) || lilv_port_is_a (plugin, port, world.lv2_EventPort)) &&
            lilv_port_is_a (plugin, port, world.lv2_InputPort) &&
            lilv_port_supports_event (plugin, port, world.midi_MidiEvent))
            return i;
@@ -592,7 +596,8 @@ bool Module::hasEditor() const
             bestUI = uri;
             break;
         }
-        else if (quality == 2) {
+        else if (quality == 2)
+        {
             nativeUI = uri;
         }
     }

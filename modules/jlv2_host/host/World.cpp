@@ -3,7 +3,7 @@
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    the Free Software Foundation; either version 3 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
@@ -54,7 +54,7 @@ World::World()
     ui_Gtk3UI       = lilv_new_uri (world, LV2_UI__Gtk3UI);
     ui_Qt4UI        = lilv_new_uri (world, LV2_UI__Qt4UI);
     ui_Qt5UI        = lilv_new_uri (world, LV2_UI__Qt5UI);
-    ui_JUCEUI       = lilv_new_uri (world, LVTK__JUCEUI);
+    ui_JUCEUI       = lilv_new_uri (world, JLV2__JUCEUI);
     ui_UI           = lilv_new_uri (world, LV2_UI__UI);
     trueNode        = lilv_new_bool (world, true);
     falseNode       = lilv_new_bool (world, false);

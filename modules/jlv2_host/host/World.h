@@ -3,7 +3,7 @@
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    the Free Software Foundation; either version 3 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
@@ -18,9 +18,17 @@
 
 #pragma once
 
-#ifndef LVTK_PREFIX
- #define LVTK_PREFIX      "http://lvtoolkit.org/ns/lvtk#"
- #define LVTK__JUCEUI      LVTK_PREFIX "JUCEUI"
+#ifndef JLV2_PREFIX
+ #define JLV2_PREFIX      "https://lvtk.org/ns/jlv2#"
+ #define JLV2__JUCEUI      JLV2_PREFIX "JUCEUI"
+#endif
+
+#if JUCE_MAC
+ #define JLV2_NATIVEUI     "http://lv2plug.in/ns/extensions/ui#CocoaUI"
+#if JUCE_WINDOWS
+ #define JLV2_NATIVEUI     "http://lv2plug.in/ns/extensions/ui#WindowsUI"
+#elif JUCE_LINUX
+ #define JLV2_NATIVEUI     "http://lv2plug.in/ns/extensions/ui#X11UI"
 #endif
 
 namespace jlv2 {
