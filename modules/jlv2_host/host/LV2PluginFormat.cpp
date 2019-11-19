@@ -376,17 +376,45 @@ private:
 
 //=============================================================================
 
-class LV2EditorShowInterface : public AudioProcessorEditor,
+class LV2AudioProcessorEditor : public AudioProcessorEditor
+{
+public:
+    LV2AudioProcessorEditor (LV2PluginInstance* p, ModuleUI::Ptr _ui)
+        : AudioProcessorEditor (p), plugin (*p), ui (_ui)
+    {
+        jassert (ui != nullptr);
+        ui->instantiate();
+        jassert (ui->loaded());
+        setOpaque (true);
+    }
+
+    virtual ~LV2AudioProcessorEditor() {}
+
+    virtual void paint (Graphics& g) override
+    {
+        g.fillAll (Colours::black);
+    }
+
+protected:
+    LV2PluginInstance& plugin;
+    ModuleUI::Ptr ui;
+
+    void cleanup()
+    {
+        plugin.editorBeingDeleted (this);
+        ui->unload();
+        ui = nullptr;
+    }
+};
+
+class LV2EditorShowInterface : public LV2AudioProcessorEditor,
                                public Timer
 {
 public:
-    LV2EditorShowInterface (LV2PluginInstance* p, ModuleUI::Ptr _ui)
-        : AudioProcessorEditor (p),
-          plugin (*p), ui (_ui)
+    LV2EditorShowInterface (LV2PluginInstance* p, ModuleUI::Ptr mui)
+        : LV2AudioProcessorEditor (p, mui)
     {
-        ui->instantiate();
         addAndMakeVisible (button);
-        button.setButtonText ("Show UI");
         button.onClick = [this]()
         {
             button.setToggleState (! button.getToggleState(), dontSendNotification);
@@ -396,21 +424,19 @@ public:
                 if (showing)
                     startTimerHz (60);
             }
-            else
+            else if (showing)
             {
-                if (showing)
+                if (ui->hide())
                 {
-                    if (ui->hide())
-                    {
-                        showing = false;
-                        stopTimer();
-                    }
+                    showing = false;
+                    stopTimer();
                 }
             }
-
+        
             stabilizeButton();
         };
 
+        stabilizeButton();
         setSize (200, 90);
         setResizable (false, false);
     }
@@ -418,21 +444,14 @@ public:
     ~LV2EditorShowInterface()
     {
         stopTimer();
-        plugin.editorBeingDeleted (this);
-
-        if (ui)
-        {
-            if (showing)
-                ui->hide();
-            ui->unload();
-        }
-
-        ui = nullptr;
+        if (showing)
+            ui->hide();
+        cleanup();
     }
 
     void resized() override
     {
-        button.setBounds (getLocalBounds().reduced (4));
+        button.setBounds (getLocalBounds().reduced (8));
     }
 
     void timerCallback() override
@@ -443,8 +462,6 @@ public:
     }
 
 private:
-    LV2PluginInstance& plugin;
-    ModuleUI::Ptr ui = nullptr;
     TextButton button;
     bool showing = false;
 
@@ -457,11 +474,11 @@ private:
 
 //=============================================================================
 
-class LV2EditorJuce : public AudioProcessorEditor,
-                      public Timer
+class LV2EditorNative : public AudioProcessorEditor,
+                        public Timer
 {
 public:
-    LV2EditorJuce (LV2PluginInstance* p, ModuleUI::Ptr _ui)
+    LV2EditorNative (LV2PluginInstance* p, ModuleUI::Ptr _ui)
         : AudioProcessorEditor (p),
           plugin (*p),
           ui (_ui)
@@ -530,7 +547,7 @@ public:
         }
     }
 
-    ~LV2EditorJuce()
+    ~LV2EditorNative()
     {
         if (ui && ui->isNative())
         {
@@ -538,7 +555,7 @@ public:
             native->setView (nullptr);
            #elif JUCE_LINUX
            #endif
-            native.reset();          
+            native.reset();
         }
         else
         {
@@ -621,6 +638,64 @@ private:
 
 //=============================================================================
 
+#if JUCE_LINUX
+class LV2EditorGtk : public LV2AudioProcessorEditor,
+                     public Timer
+{
+public:
+    LV2EditorGtk (LV2PluginInstance* p, ModuleUI::Ptr mui)
+        : LV2AudioProcessorEditor (p, mui)
+    {
+        jassert (ui->hasContainerType (LV2_UI__GtkUI));
+
+        GtkWidget* plug = gtk_plug_new (0);
+        GtkWidget* uiw = (GtkWidget*) ui->getWidget();
+        
+        GtkAllocation rect;
+        gtk_container_add (GTK_CONTAINER (plug), uiw);
+        gtk_widget_show_all (plug);
+        
+        gtk_widget_get_allocation (uiw, &rect);
+        setSize (jmax (10, rect.width), jmax (10, rect.height));
+        DBG("gtk w = " << rect.width);
+        DBG("gtk h = " << rect.height);
+        
+        embed.reset (new XEmbedComponent (
+            (unsigned long) gtk_plug_get_id (GTK_PLUG (plug)),
+            true, true));
+        
+        setResizable (true, true);
+        addAndMakeVisible (embed.get());
+    }
+
+    ~LV2EditorGtk()
+    {
+        cleanup();
+    }
+
+    void timerCallback() override
+    {
+        stopTimer();
+    }
+
+    void paint (Graphics& g) override
+    {
+        g.fillAll (Colours::black);
+    }
+
+    void resized() override
+    {
+        if (embed != nullptr)
+            embed->setBounds (getLocalBounds());
+    }
+
+private:
+    std::unique_ptr<XEmbedComponent> embed;
+};
+#endif
+
+//=============================================================================
+
 AudioProcessorEditor* LV2PluginInstance::createEditor()
 {
     jassert (module->hasEditor());
@@ -629,7 +704,7 @@ AudioProcessorEditor* LV2PluginInstance::createEditor()
         return nullptr;
     return ui->requiresShowInterface()
         ? (AudioProcessorEditor*) new LV2EditorShowInterface (this, ui)
-        : (AudioProcessorEditor*) new LV2EditorJuce (this, ui);
+        : (AudioProcessorEditor*) new LV2EditorNative (this, ui);
 }
 
 //=============================================================================
