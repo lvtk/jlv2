@@ -302,16 +302,7 @@ public:
         suil_instance_port_event (instance, port, size, format, buffer);
     }
 
-    bool isNative() const 
-    {
-       #if JUCE_MAC
-        return widgetType == LV2_UI__CocoaUI;
-       #elif JUCE_WINDOWS
-        return widgetType == LV2_UI__WindowsUI;
-       #else
-        return widgetType == LV2_UI__X11UI;
-       #endif
-    }
+    bool isNative() const { return containerType == JLV2__NativeUI; }
 
     bool hasContainerType (const String& type) const
     {
@@ -367,24 +358,58 @@ public:
         );
 
         // Nullify all UI extensions
-        clientResize = nullptr;
+        uiResize = nullptr;
+        uiIdle = nullptr;
+        uiShow = nullptr;
 
         if (nullptr == instance)
             return;
 
         // resize - plugin side
-        if (const auto* data = suil_instance_extension_data (instance, LV2_UI__resize))
-            clientResize = (LV2UI_Resize*) data;
+        if (const auto* resizeData = suil_instance_extension_data (instance, LV2_UI__resize))
+            uiResize = (LV2UI_Resize*) resizeData;
+        
+        // Idle Interface
+        if (const auto* idleData = suil_instance_extension_data (instance, LV2_UI__idleInterface))
+            uiIdle = (LV2UI_Idle_Interface*) idleData;
+        
+        // Show Interface
+        if (const auto* showData = suil_instance_extension_data (instance, LV2_UI__showInterface))
+            uiShow = (LV2UI_Show_Interface*) showData;
+    }
+
+    bool haveShowInterface() const
+    { 
+        return instance != nullptr &&
+            uiShow != nullptr && 
+            uiShow->show != nullptr &&
+            uiShow->hide != nullptr;
+    }
+
+    bool requiresShowInterface() const { return requireShow; }
+
+    bool show()
+    {
+        if (! haveShowInterface())
+            return false;
+        return 0 == uiShow->show ((LV2UI_Handle) suil_instance_get_handle (instance));
+    }
+
+    bool hide()
+    {
+        if (! haveShowInterface())
+            return false;
+        return 0 == uiShow->hide ((LV2UI_Handle) suil_instance_get_handle (instance));
     }
 
     /** Returns true if the plugin provided LV2_UI__idleInterface */
-    bool haveIdleInterface() const { return nullptr != idleIface && nullptr != instance; }
+    bool haveIdleInterface() const { return nullptr != uiIdle && nullptr != instance; }
     
-    void idle() 
+    void idle()
     {
         if (! haveIdleInterface())
             return;
-        idleIface->idle ((LV2UI_Handle) suil_instance_get_handle (instance));
+        uiIdle->idle ((LV2UI_Handle) suil_instance_get_handle (instance));
     }
 
     void setParent (intptr_t ptr) 
@@ -395,9 +420,9 @@ public:
     /** returs true if the UI provided LV2_UI__resize */
     bool haveClientResize() const
     {
-        return clientResize != nullptr &&
-                clientResize->handle != nullptr &&
-                clientResize->ui_resize != nullptr;
+        return uiResize != nullptr &&
+            uiResize->handle != nullptr &&
+            uiResize->ui_resize != nullptr;
     }
 
     /** Request the UI update it's size. This is the Host side of
@@ -405,7 +430,7 @@ public:
      */
     bool requestSize (int width, int height)
     {
-        return (haveClientResize()) ? clientResize->ui_resize (clientResize->handle, width, height)
+        return (haveClientResize()) ? uiResize->ui_resize (uiResize->handle, width, height)
                                     : false;
     }
 
@@ -419,11 +444,13 @@ private:
     friend class Module;
     friend class World;
 
-    LV2UI_Idle_Interface *idleIface = nullptr;
+    LV2UI_Idle_Interface *uiIdle = nullptr;
+    LV2UI_Show_Interface *uiShow = nullptr;
+    LV2UI_Resize* uiResize = nullptr;
+
     LV2_Feature parent { LV2_UI__parent, nullptr };
     LV2_Feature resizeFeature { LV2_UI__resize, nullptr };
     LV2UI_Resize hostResizeData;
-    LV2UI_Resize* clientResize = nullptr;
     LV2_Feature instanceFeature { LV2_INSTANCE_ACCESS_URI, nullptr };
     LV2_Feature dataFeature { LV2_DATA_ACCESS_URI, nullptr };
     LV2_Extension_Data_Feature dataFeatureData;
@@ -444,6 +471,7 @@ private:
     String widgetType {};
     String bundlePath {};
     String binaryPath {};
+    bool requireShow = false;
 
     static const void* dataAccess (const char* uri)
     {

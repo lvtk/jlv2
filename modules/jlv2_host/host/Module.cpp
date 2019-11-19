@@ -24,6 +24,18 @@ enum UIQuality {
     UI_NATIVE_EMBED   = 2     // Embeddable Native UI type
 };
 
+struct SortSupportedUIs
+{
+    // - a value of < 0 if the first comes before the second
+    // - a value of 0 if the two objects are equivalent
+    // - a value of > 0 if the second comes before the first
+    int compareElements (const SupportedUI* first, const SupportedUI* second)
+    {
+        // noop
+        return 0;
+    }
+};
+
 namespace Callbacks {
 
 inline unsigned uiSupported (const char* hostType, const char* uiType)
@@ -59,6 +71,7 @@ public:
         uiptr->widgetType       = supportedUI.widget;
         uiptr->bundlePath       = supportedUI.bundle;
         uiptr->binaryPath       = supportedUI.binary;
+        uiptr->requireShow      = supportedUI.useShowInterface;
         this->ui = uiptr;
         return uiptr;
     }
@@ -584,8 +597,7 @@ PortType Module::getPortType (uint32 index) const
 
 bool Module::isLoaded() const { return instance != nullptr; }
 
-static SupportedUI*
-createSupportedUI (const LilvPlugin* plugin, const LilvUI* ui)
+static SupportedUI* createSupportedUI (const LilvPlugin* plugin, const LilvUI* ui)
 {
     auto entry = new SupportedUI();
     entry->URI      = lilv_node_as_uri (lilv_ui_get_uri (ui));
@@ -649,8 +661,11 @@ bool Module::hasEditor() const
             continue;
         }
 
-        // check if native UI
         const LilvNode* uitype = nullptr;
+
+       #if JUCE_MAC || JUCE_WINDOWS
+        // check if native UI
+        uitype = nullptr;
         if (lilv_ui_is_supported (lui, suil_ui_supported, world.getNativeWidgetType(), &uitype))
         {
             if (uitype != nullptr && lilv_node_is_uri (uitype))
@@ -662,6 +677,7 @@ bool Module::hasEditor() const
             }
         }
 
+       #elif JUCE_LINUX
         // Check for Gtk2
         uitype = nullptr;
         if (lilv_ui_is_supported (lui, suil_ui_supported, world.ui_GtkUI, &uitype))
@@ -671,15 +687,25 @@ bool Module::hasEditor() const
                 auto* const s = suplist.add (createSupportedUI (plugin, lui));
                 s->container = LV2_UI__GtkUI;
                 s->widget    = String::fromUTF8 (lilv_node_as_uri (uitype));
-               #if ! JUCE_LINUX
-                s->useShowInterface = hasShow;
-               #endif  
                 continue;
             }
+        }
+       #endif
+
+        // no UI this far, check show interface
+        if (hasShow)
+        {
+            auto* const s = suplist.add (createSupportedUI (plugin, lui));
+            s->useShowInterface = true;
+            s->container = LV2_UI__showInterface;
+            s->widget    = LV2_UI__showInterface;
         }
     }
 
     lilv_uis_free (uis);
+
+    SortSupportedUIs sorter;
+    suplist.sort (sorter, true);
 
     for (const auto* const sui : supportedUIs)
     {
@@ -726,10 +752,14 @@ ModuleUI* Module::createEditor()
 
     for (const auto* const u : supportedUIs)
     {
+        if (u->container == JLV2__NativeUI)
+            instance = priv->createModuleUI (*u);
        #if JUCE_LINUX
-        if (u->container == LV2_UI__GtkUI)
+        else if (u->container == LV2_UI__GtkUI)
             instance = priv->createModuleUI (*u);
        #endif
+        else if (u->useShowInterface)
+            instance = priv->createModuleUI (*u);
 
         if (instance != nullptr)
             break;

@@ -374,6 +374,89 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LV2PluginInstance)
 };
 
+//=============================================================================
+
+class LV2EditorShowInterface : public AudioProcessorEditor,
+                               public Timer
+{
+public:
+    LV2EditorShowInterface (LV2PluginInstance* p, ModuleUI::Ptr _ui)
+        : AudioProcessorEditor (p),
+          plugin (*p), ui (_ui)
+    {
+        ui->instantiate();
+        addAndMakeVisible (button);
+        button.setButtonText ("Show UI");
+        button.onClick = [this]()
+        {
+            button.setToggleState (! button.getToggleState(), dontSendNotification);
+            if (button.getToggleState())
+            {
+                showing = ui->show();
+                if (showing)
+                    startTimerHz (60);
+            }
+            else
+            {
+                if (showing)
+                {
+                    if (ui->hide())
+                    {
+                        showing = false;
+                        stopTimer();
+                    }
+                }
+            }
+
+            stabilizeButton();
+        };
+
+        setSize (200, 90);
+        setResizable (false, false);
+    }
+
+    ~LV2EditorShowInterface()
+    {
+        stopTimer();
+        plugin.editorBeingDeleted (this);
+
+        if (ui)
+        {
+            if (showing)
+                ui->hide();
+            ui->unload();
+        }
+
+        ui = nullptr;
+    }
+
+    void resized() override
+    {
+        button.setBounds (getLocalBounds().reduced (4));
+    }
+
+    void timerCallback() override
+    {
+        if (! showing)
+            return;
+        ui->idle();
+    }
+
+private:
+    LV2PluginInstance& plugin;
+    ModuleUI::Ptr ui = nullptr;
+    TextButton button;
+    bool showing = false;
+
+    void stabilizeButton()
+    {
+        button.setToggleState (showing, dontSendNotification);
+        button.setButtonText (button.getToggleState() ? "Hide UI" : "Show UI");
+    }
+};
+
+//=============================================================================
+
 class LV2EditorJuce : public AudioProcessorEditor,
                       public Timer
 {
@@ -536,14 +619,21 @@ private:
    #endif
 };
 
+//=============================================================================
+
 AudioProcessorEditor* LV2PluginInstance::createEditor()
 {
     jassert (module->hasEditor());
     ModuleUI::Ptr ui = module->hasEditor() ? module->createEditor() : nullptr;
-    return ui != nullptr ? new LV2EditorJuce (this, ui) : nullptr;
+    if (ui == nullptr)
+        return nullptr;
+    return ui->requiresShowInterface()
+        ? (AudioProcessorEditor*) new LV2EditorShowInterface (this, ui)
+        : (AudioProcessorEditor*) new LV2EditorJuce (this, ui);
 }
 
 //=============================================================================
+
 class LV2PluginFormat::Internal : private Timer
 {
 public:
