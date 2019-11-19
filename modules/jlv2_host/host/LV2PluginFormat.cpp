@@ -443,6 +443,7 @@ public:
 
     ~LV2EditorShowInterface()
     {
+        button.onClick = nullptr;
         stopTimer();
         if (showing)
             ui->hide();
