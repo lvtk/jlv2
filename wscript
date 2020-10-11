@@ -34,10 +34,10 @@ def configure (conf):
                   'juce_audio_devices', 'juce_audio_utils',
                   'juce_gui_extra' ]:
         pkgname = '%s_debug-5' % jmod if conf.options.debug else '%s-5' % jmod
-        conf.check_cfg (package=pkgname, uselib_store=jmod.upper(), 
-                        args=['--libs', '--cflags'], mandatory=True)
+        conf.check_cfg (package=pkgname, uselib_store=jmod.upper(),
+                        args=['%s >= 5.4.5' % pkgname, '--libs', '--cflags'], mandatory=True)
 
-    conf.check_cfg (package='lv2', uselib_store='LV2',  
+    conf.check_cfg (package='lv2', uselib_store='LV2',
                     args=['--libs', '--cflags'], mandatory=True)
     conf.check_cfg (package='lilv-0', uselib_store='LILV', 
                     args=['--libs', '--cflags'], mandatory=True)
