@@ -33,9 +33,9 @@ public:
         desc.fileOrIdentifier = cli;
 
         String message;
-        if (auto* instance = plugins.createPluginInstance (desc, 48000.0, 1024, message))
+        if (auto instance = plugins.createPluginInstance (desc, 48000.0, 1024, message))
         {
-            plugin.reset (instance);
+            plugin.reset (instance.release());
             
             player.setProcessor (plugin.get());
             devices.initialiseWithDefaultDevices (2 ,2);
@@ -56,7 +56,7 @@ public:
             if (plugin->hasEditor())
                 editor = plugin->createEditorIfNeeded();
             else
-                editor = new GenericAudioProcessorEditor (instance);
+                editor = new GenericAudioProcessorEditor (plugin.get());
             
             window.reset (new PluginWindow (*plugin));
             window->setUsingNativeTitleBar (true);
