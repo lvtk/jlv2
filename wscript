@@ -43,7 +43,9 @@ def configure (conf):
                     args=['--libs', '--cflags'], mandatory=True)
     conf.check_cfg (package='suil-0', uselib_store='SUIL', 
                     args=['--libs', '--cflags'], mandatory=True)
-    
+    conf.check_cfg (package='gtk+-2.0', uselib_store='GTK',
+                    args='--cflags --libs', mandatory=False)
+
     conf.define('JUCE_MODULE_AVAILABLE_jlv2_host', True)
     conf.write_config_header ('jlv2/config.h', 'JLV2_MODULES_CONFIG_H')
     
@@ -109,7 +111,7 @@ def build (bld):
         target      = 'lib/%s' % library_slug (bld),
         use         = [ 'JLV2_HEADER', 'JUCE_AUDIO_PROCESSORS', 
                         'JUCE_DATA_STRUCTURES', 'JUCE_GUI_EXTRA',
-                        'LILV', 'SUIL' ],
+                        'LILV', 'SUIL', 'GTK' ],
         vnum        = VERSION
     )
 
