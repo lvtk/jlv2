@@ -31,35 +31,34 @@ namespace jlv2 {
 
 class LV2AudioParameter : public AudioProcessorParameter
 {
-    Module& module;
-    const uint32 portIdx;
-    const String name;
-    float defaultValue;
-    Atomic<float> value;
-
 public:
     LV2AudioParameter (uint32 port, Module& _module)
         : module (_module), 
           portIdx (port),
           name (module.getPortName (port))
     {
-        module.getPortRange (port, range.start, range.end, defaultValue);
-        value.set (getDefaultValue());
+        module.getPortRange (port, minValue, maxValue, defaultValue);
     }
 
-    ~LV2AudioParameter() = default;
+    virtual ~LV2AudioParameter() = default;
+
+    static LV2AudioParameter* create (uint32 port, Module& module);
 
     uint32 getPort() const { return portIdx; }
 
-    float getValue() const override
-    {
-        return value.get();
-    }
+    /** Returns the LV2 control port min value */
+    float getPortMin()     const { return minValue; }
 
-    // update the value, but dont write to port
+    /** Returns the LV2 control port max value */
+    float getPortMax()     const { return maxValue; }
+
+    /** Returns the LV2 control port default value */
+    float getPortDefault() const { return defaultValue; }
+
+    /** update the value, but dont write to port */
     void update (float newValue, bool notifyListeners = true)
     {
-        newValue = range.convertTo0to1 (newValue);
+        newValue = convertTo0to1 (newValue);
         if (newValue == value.get())
             return;
 
@@ -68,15 +67,27 @@ public:
             sendValueChangedMessageToListeners (value.get());
     }
 
+    /** Convert the input LV2 "ranged" value to 0 to 1 */
+    virtual float convertTo0to1 (float input) const = 0;
+    
+    /** Convert the 0 to 1 input to a LV2 "ranged" value */
+    virtual float convertFrom0to1 (float input) const = 0;
+
+    //=========================================================================
+    float getValue() const override
+    {
+        return value.get();
+    }
+
     /** Will write to Port with correct min max ratio conversion */
     void setValue (float newValue) override
     {
         value.set (newValue);
-        const auto expanded = range.convertFrom0to1 (newValue);
+        const auto expanded = convertFrom0to1 (newValue);
         module.write (portIdx, sizeof(float), 0, &expanded);
     }
 
-    float getDefaultValue() const override      { return range.convertTo0to1 (defaultValue); }
+    float getDefaultValue() const override      { return convertTo0to1 (defaultValue); }
     String getName (int maxLen) const override  { return name.substring (0, maxLen); }
 
     // Units e.g. Hz
@@ -84,31 +95,125 @@ public:
 
     String getText (float normalisedValue, int /*maximumStringLength*/) const override
     {
-        return String (range.convertFrom0to1 (normalisedValue), 2);
+        return String (convertFrom0to1 (normalisedValue), 2);
     }
 
     /** Parse a string and return the appropriate value for it. */
     float getValueForText (const String& text) const override
     {
-        return range.convertTo0to1 (text.getFloatValue());
+        return convertTo0to1 (text.getFloatValue());
     }
 
    #if 0
     virtual int getNumSteps() const;
     virtual bool isDiscrete() const;
+    virtual StringArray getAllValueStrings() const;
     virtual bool isBoolean() const;
     virtual bool isOrientationInverted() const;
     virtual bool isAutomatable() const;
     virtual bool isMetaParameter() const;
     virtual Category getCategory() const;
-    virtual String getCurrentValueAsText() const;
-    virtual StringArray getAllValueStrings() const;
+    virtual String getCurrentValueAsText() const;    
    #endif
+
+private:
+    Module& module;
+    const uint32 portIdx;
+    const String name;
+    float minValue, maxValue, defaultValue;
+    Atomic<float> value;
+};
+
+//=============================================================================
+class LV2AudioParameterFloat : public LV2AudioParameter
+{
+public:
+    LV2AudioParameterFloat (uint32 port, Module& module)
+        : LV2AudioParameter (port, module)
+    {
+        range.start = getPortMin();
+        range.end   = getPortMax();
+    }
+
+    float convertTo0to1 (float input)   const override { return range.convertTo0to1 (input); }
+    float convertFrom0to1 (float input) const override { return range.convertFrom0to1 (input); }
 
 private:
     NormalisableRange<float> range;
 };
 
+//=============================================================================
+class LV2AudioParameterChoice : public LV2AudioParameter
+{
+public:
+    LV2AudioParameterChoice (uint32 port, Module& module, const ScalePoints& sps)
+        : LV2AudioParameter (port, module),
+          points (sps)
+    {
+
+    }
+
+    float convertTo0to1 (float input)   const override 
+    {
+        NormalisableRange<float> r (getPortMin(), getPortMax());
+        return r.convertTo0to1 (input); 
+    }
+    
+    float convertFrom0to1 (float input) const override
+    {
+        NormalisableRange<float> r (getPortMin(), getPortMax());
+        return r.convertFrom0to1 (input); 
+    }
+
+    int getNumSteps() const override
+    {
+        return points.isNotEmpty() ? points.size()
+            : AudioProcessorParameter::getNumSteps();
+    }
+
+    bool isDiscrete() const override
+    {
+        return points.isNotEmpty() ? true
+            : AudioProcessorParameter::isDiscrete();
+    }
+
+    StringArray getAllValueStrings() const override
+    {
+        StringArray valueStrings;
+        ScalePoints::Iterator iter (points);
+        while (iter.next())
+            valueStrings.add (iter.getLabel());
+        return valueStrings;
+    }
+
+private:
+    const ScalePoints points;
+};
+
+//=============================================================================
+LV2AudioParameter* LV2AudioParameter::create (uint32 port, Module& module)
+{
+    std::unique_ptr<LV2AudioParameter> param;
+    const auto scalePoints = module.getScalePoints (port);
+
+    if (scalePoints.isNotEmpty())
+    {
+        param.reset (new LV2AudioParameterChoice (port, module, scalePoints));
+    }
+    else
+    {
+        param.reset (new LV2AudioParameterFloat (port, module));
+    }
+
+    if (param != nullptr)
+    {
+        param->value.set (param->getDefaultValue());
+    }
+
+    return param != nullptr ? param.release() : nullptr;
+}
+
+//=============================================================================
 class LV2PluginInstance  : public AudioPluginInstance
 {
 public:
@@ -134,7 +239,7 @@ public:
 
         for (uint32 p = 0; p < numPorts; ++p)
             if (module->isPortInput (p) && PortType::Control == module->getPortType (p))
-                addParameter (new LV2AudioParameter (p, *module));    
+                addParameter (LV2AudioParameter::create (p, *module));
  
         const ChannelConfig& channels (module->getChannelConfig());
         setPlayConfigDetails (channels.getNumAudioInputs(),

@@ -20,6 +20,54 @@
 
 namespace jlv2 {
 
+/** Representation of LV2 Scale Points */
+class ScalePoints
+{
+public:
+    using ValueMap  = HashMap<String, float>;
+    using size_type = int;
+
+    ScalePoints() = default;
+    ~ScalePoints() = default;
+
+    ScalePoints (const ScalePoints& o) { operator= (o); }
+    ScalePoints& operator= (const ScalePoints& o)
+    {
+        ValueMap::Iterator iter (o.points);
+        while (iter.next())
+            points.set (iter.getKey(), iter.getValue());
+        return *this;
+    }
+
+    /** Return true if empty */
+    bool isEmpty()    const { return points.size() <= 0; }
+
+    /** Return true if not empty */
+    bool isNotEmpty() const { return ! isEmpty(); }
+
+    /** Returns the total number of scale points */
+    int  size()       const { return points.size(); }
+
+    class Iterator
+    {
+    public:
+        Iterator (const ScalePoints& o) 
+            : iter (o.points) {}
+
+        bool   next()           { return iter.next(); }
+        float  getValue() const { return iter.getValue(); }
+        String getLabel() const { return iter.getKey(); }
+
+    private:
+        ValueMap::Iterator iter;
+    };
+
+private:
+    friend class Module;
+    friend class Iterator;
+    ValueMap points;
+};
+
 /** Description of a supported UI */
 struct SupportedUI
 {
@@ -94,6 +142,9 @@ public:
     /** Get the type of port for a port index */
     PortType getPortType (uint32 index) const;
 
+    /** Get the scale points for a port */
+    ScalePoints getScalePoints (uint32 port) const;
+
     /** Get the URI for this plugin */
     String getURI() const;
 
@@ -103,7 +154,7 @@ public:
     //=========================================================================
 
     /** Returns true if the Plugin has one or more UIs */
-    inline bool hasEditor() const;
+    bool hasEditor() const;
 
     /** Returns the best quality UI by URI */
     String getBestUI() const { return bestUI; }
@@ -239,6 +290,7 @@ private:
     uint32 ntbufsize;
 
     OwnedArray<SupportedUI> supportedUIs;
+    OwnedArray<ScalePoints> scalePoints;
 
     void activatePorts();
     void freeInstance();

@@ -595,6 +595,30 @@ PortType Module::getPortType (uint32 index) const
     return PortType::Unknown;
 }
 
+ScalePoints Module::getScalePoints (uint32 index) const
+{
+    ScalePoints sps;
+
+    if (const auto* port = lilv_plugin_get_port_by_index (plugin, index))
+    {
+        if (auto* points = lilv_port_get_scale_points (plugin, port))
+        {
+            LILV_FOREACH(scale_points, iter, points)
+            {
+                const auto* point = lilv_scale_points_get (points, iter);
+                sps.points.set (
+                    String::fromUTF8 (lilv_node_as_string (lilv_scale_point_get_label (point))),
+                    lilv_node_as_float (lilv_scale_point_get_value (point))
+                );
+            }
+
+            lilv_scale_points_free (points);
+        }
+    }
+
+    return sps;
+}
+
 bool Module::isLoaded() const { return instance != nullptr; }
 
 static SupportedUI* createSupportedUI (const LilvPlugin* plugin, const LilvUI* ui)
