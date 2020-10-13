@@ -9,6 +9,7 @@ Simple plugins should load and run fine, however handling LV2 Atom ports is not 
 #### Supported LV2 Features
 * Instance Access
 * Log
+* Scale Points
 * State
 * UI
 * URID

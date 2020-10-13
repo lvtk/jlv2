@@ -98,13 +98,11 @@ public:
         return String (convertFrom0to1 (normalisedValue), 2);
     }
 
-    /** Parse a string and return the appropriate value for it. */
-    float getValueForText (const String& text) const override
-    {
-        return convertTo0to1 (text.getFloatValue());
-    }
+    
 
    #if 0
+   /** Parse a string and return the appropriate value for it. */
+    virtual float getValueForText (const String& text) const;
     virtual int getNumSteps() const;
     virtual bool isDiscrete() const;
     virtual StringArray getAllValueStrings() const;
@@ -137,6 +135,12 @@ public:
 
     float convertTo0to1 (float input)   const override { return range.convertTo0to1 (input); }
     float convertFrom0to1 (float input) const override { return range.convertFrom0to1 (input); }
+    
+    /** Parse a string and return the appropriate value for it. */
+    float getValueForText (const String& text) const override
+    {
+        return convertTo0to1 (text.getFloatValue());
+    }
 
 private:
     NormalisableRange<float> range;
@@ -150,44 +154,50 @@ public:
         : LV2AudioParameter (port, module),
           points (sps)
     {
-
+        ScalePoints::Iterator iter (points);
+        while (iter.next())
+        {
+            labels.add (iter.getLabel());
+            values.add (iter.getValue());
+        }
     }
 
-    float convertTo0to1 (float input)   const override 
+    float convertTo0to1 (float input) const override
     {
-        NormalisableRange<float> r (getPortMin(), getPortMax());
-        return r.convertTo0to1 (input); 
+        auto index = static_cast<float> (values.indexOf (input));
+        return index / static_cast<float> (values.size() - 1);
     }
     
     float convertFrom0to1 (float input) const override
     {
-        NormalisableRange<float> r (getPortMin(), getPortMax());
-        return r.convertFrom0to1 (input); 
+        int index = roundToInt (input * (float)(values.size() - 1));
+        return isPositiveAndBelow (index, values.size()) 
+            ? values.getUnchecked (index) : getPortDefault();
     }
 
-    int getNumSteps() const override
+    String getCurrentValueAsText() const override
     {
-        return points.isNotEmpty() ? points.size()
-            : AudioProcessorParameter::getNumSteps();
+        int index = roundToInt (getValue() * (float)(values.size() - 1));
+        return labels [index];
     }
 
-    bool isDiscrete() const override
+    /** Parse a string and return the appropriate JUCE parameter value for it. */
+    float getValueForText (const String& text) const override
     {
-        return points.isNotEmpty() ? true
-            : AudioProcessorParameter::isDiscrete();
+        int index = labels.indexOf (text);
+        return isPositiveAndBelow (index, values.size())
+            ? (float)index / (float)(values.size() - 1)
+            : getDefaultValue();
     }
 
-    StringArray getAllValueStrings() const override
-    {
-        StringArray valueStrings;
-        ScalePoints::Iterator iter (points);
-        while (iter.next())
-            valueStrings.add (iter.getLabel());
-        return valueStrings;
-    }
+    int getNumSteps() const override { return points.isNotEmpty() ? points.size() : AudioProcessorParameter::getNumSteps(); }
+    bool isDiscrete() const override { return points.isNotEmpty() ? true : AudioProcessorParameter::isDiscrete(); }
+    StringArray getAllValueStrings() const override { return labels; }
 
 private:
     const ScalePoints points;
+    StringArray  labels;
+    Array<float> values;
 };
 
 //=============================================================================
