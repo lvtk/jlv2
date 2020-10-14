@@ -25,11 +25,10 @@
  #error "Incorrect use of JUCE cpp file"
 #endif
 
-#include <juce_gui_extra/juce_gui_extra.h>
 #include "jlv2_host/jlv2_host.h"
 
 #if JLV2_PLUGINHOST_LV2
-
+#include <juce_gui_extra/juce_gui_extra.h>
 #include <lv2/lv2plug.in/ns/lv2core/lv2.h>
 #include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
 #include <lv2/lv2plug.in/ns/extensions/units/units.h>

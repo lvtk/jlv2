@@ -55,6 +55,8 @@
  #define JLV2_SUIL_INIT 1
 #endif
 
+#if JLV2_PLUGINHOST_LV2
+
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #ifndef JLV2_API
@@ -65,6 +67,7 @@
  #define JLV2_EXPORT JUCE_EXPORT  /**< This macro is added to all JUCE public class declarations. */
 #endif
 
+
 namespace jlv2 {
 using namespace juce;
 class World;
@@ -72,3 +75,4 @@ class SymbolMap;
 }
 
 #include "host/LV2PluginFormat.h"
+#endif
