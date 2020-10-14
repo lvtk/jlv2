@@ -617,10 +617,10 @@ public:
             startTimerHz (60);
             setResizable (true, false);
         }
-       #if JUCE_LINUX
+
+       #if JUCE_LINUX && JLV2_GTKUI
         else if (ui && ui->hasContainerType (LV2_UI__GtkUI))
         {
-            
             ui->onClientResize = [this]() -> int {
                 setSize (jmax (1, ui->getClientWidth()), jmax (1, ui->getClientHeight()));
                 return 0;
@@ -628,7 +628,7 @@ public:
             ui->instantiate();
 
             GtkWidget* plug = gtk_plug_new (0);
-            GtkWidget* uiw = (GtkWidget*) ui->getWidget();
+            GtkWidget* uiw  = (GtkWidget*) ui->getWidget();
             
             GtkAllocation rect;
             gtk_container_add (GTK_CONTAINER (plug), uiw);
@@ -754,7 +754,7 @@ private:
 
 //=============================================================================
 
-#if JUCE_LINUX
+#if JUCE_LINUX && JLV2_GTKUI
 class LV2EditorGtk : public LV2AudioProcessorEditor,
                      public Timer
 {
@@ -862,14 +862,14 @@ private:
 
     void init()
     {
-       #if JUCE_LINUX
+       #if JUCE_LINUX && JLV2_GTKUI
         gtk_init (nullptr, nullptr);
        #endif
     }
     
     void timerCallback() override
     {
-       #if JUCE_LINUX
+       #if JUCE_LINUX && JLV2_GTKUI
         gtk_main_iteration_do (false);
        #else
         stopTimer();

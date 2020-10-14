@@ -701,7 +701,7 @@ bool Module::hasEditor() const
             }
         }
 
-       #elif JUCE_LINUX
+       #elif JUCE_LINUX && JLV2_GTKUI
         // Check for Gtk2
         uitype = nullptr;
         if (lilv_ui_is_supported (lui, suil_ui_supported, world.ui_GtkUI, &uitype))

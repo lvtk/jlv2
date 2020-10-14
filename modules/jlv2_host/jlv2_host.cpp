@@ -47,7 +47,7 @@
 #include <lilv/lilv.h>
 #include <suil/suil.h>
 
-#if JUCE_LINUX
+#if JUCE_LINUX && JLV2_GTKUI
  #include <gtk/gtk.h>
 #endif
 
