@@ -889,7 +889,7 @@ void LV2PluginFormat::findAllTypesForFile (OwnedArray <PluginDescription>& resul
         return;
     }
 
-    ScopedPointer<PluginDescription> desc (new PluginDescription());
+    std::unique_ptr<PluginDescription> desc (new PluginDescription());
     desc->fileOrIdentifier = fileOrIdentifier;
     desc->pluginFormatName = String ("LV2");
     desc->uid = 0;

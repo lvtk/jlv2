@@ -1,6 +1,6 @@
 /*
     This file is part of jlv2
-    Copyright (c) 2014-2019  Michael Fisher <mfisher@kushview.net>
+    Copyright (c) 2014-2020  Michael Fisher <mfisher@kushview.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -103,8 +103,8 @@ public:
 private:
     friend class MapFeature;
     friend class UnmapFeature;
-    typedef std::map<std::string, LV2_URID> Mapped;
-    typedef std::map<LV2_URID, std::string> Unmapped;
+    typedef std::unordered_map<std::string, LV2_URID> Mapped;
+    typedef std::unordered_map<LV2_URID, std::string> Unmapped;
     Mapped mapped; Unmapped unmapped;
 
     inline static LV2_URID _map (LV2_URID_Map_Handle handle, const char* uri)

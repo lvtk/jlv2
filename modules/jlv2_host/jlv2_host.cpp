@@ -56,6 +56,8 @@ class Module;
 class ModuleUI;
 }
 
+#include <unordered_map>
+
 #include "host/PortType.h"
 #include "host/PortBuffer.h"
 #include "host/PortEvent.h"
