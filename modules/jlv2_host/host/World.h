@@ -135,8 +135,8 @@ public:
     String unmap (uint32 urid) { return symbolMap.unmap (urid); }
 
 private:
-    LilvWorld* world;
-    SuilHost* suil;
+    LilvWorld* world = nullptr;
+    SuilHost* suil = nullptr;
     SymbolMap symbolMap;
     LV2FeatureArray features;
 
