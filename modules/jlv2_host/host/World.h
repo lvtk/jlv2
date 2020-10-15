@@ -52,6 +52,7 @@ public:
     const LilvNode*   midi_MidiEvent;
     const LilvNode*   work_schedule;
     const LilvNode*   work_interface;
+    const LilvNode*   options_options;
     const LilvNode*   ui_CocoaUI;
     const LilvNode*   ui_WindowsUI;
     const LilvNode*   ui_X11UI;
