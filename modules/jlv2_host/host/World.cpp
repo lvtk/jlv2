@@ -22,6 +22,69 @@
 
 namespace jlv2 {
 
+//=============================================================================
+class OptionsFeature :  public LV2Feature
+{
+public:
+    OptionsFeature (SymbolMap& symbolMap)
+    {
+        uri = LV2_OPTIONS__options;
+        feat.URI    = uri.toRawUTF8();
+        feat.data   = options;
+
+        minBlockLengthOption = LV2_Options_Option{LV2_OPTIONS_INSTANCE,
+                                0,
+                                symbolMap.map(LV2_BUF_SIZE__minBlockLength),
+                                sizeof(int),
+                                symbolMap.map(LV2_ATOM__Int),
+                                &minBlockLengthValue};
+        maxBlockLengthOption = LV2_Options_Option{LV2_OPTIONS_INSTANCE,
+                                0,
+                                symbolMap.map(LV2_BUF_SIZE__maxBlockLength),
+                                sizeof(int),
+                                symbolMap.map(LV2_ATOM__Int),
+                                &maxBlockLengthValue};
+        options[0] = minBlockLengthOption;
+        options[1] = maxBlockLengthOption;
+        options[2] = LV2_Options_Option{LV2_OPTIONS_BLANK, 0, 0, 0, 0};                        
+    }
+
+    virtual ~OptionsFeature() { }
+
+    LV2_Options_Option minBlockLengthOption, maxBlockLengthOption;
+    LV2_Options_Option options[3];
+    const int minBlockLengthValue = 128;
+    const int maxBlockLengthValue = 8192;
+    const String& getURI() const { return uri; }
+    const LV2_Feature* getFeature() const { return &feat; }
+
+private:
+    String       uri;
+    LV2_Feature  feat;
+    friend class SymbolMap;
+};
+
+//=============================================================================
+class BoundedBlockLengthFeature : public LV2Feature
+{
+public:
+    BoundedBlockLengthFeature()
+    {
+        uri = LV2_BUF_SIZE__boundedBlockLength;
+        feat.URI = uri.toRawUTF8();
+        feat.data = nullptr;
+    }
+
+    virtual ~BoundedBlockLengthFeature() { }
+    const String& getURI() const { return uri; }
+    const LV2_Feature* getFeature() const { return &feat; }
+
+private:
+    String       uri;
+    LV2_Feature  feat;
+};
+
+//=============================================================================
 World::World()
 {
    #if JUCE_MAC
@@ -48,6 +111,7 @@ World::World()
     midi_MidiEvent  = lilv_new_uri (world, LV2_MIDI__MidiEvent);
     work_schedule   = lilv_new_uri (world, LV2_WORKER__schedule);
     work_interface  = lilv_new_uri (world, LV2_WORKER__interface);
+    options_options = lilv_new_uri (world, LV2_OPTIONS__options);
     ui_CocoaUI      = lilv_new_uri (world, LV2_UI__CocoaUI);
     ui_WindowsUI    = lilv_new_uri (world, LV2_UI__WindowsUI);
     ui_X11UI        = lilv_new_uri (world, LV2_UI__X11UI);
@@ -83,6 +147,8 @@ World::World()
     addFeature (symbolMap.createMapFeature(), false);
     addFeature (symbolMap.createUnmapFeature(), false);
     addFeature (new LogFeature(), true);
+    addFeature (new OptionsFeature(symbolMap), true);
+    addFeature (new BoundedBlockLengthFeature(), true);
 }
 
 World::~World()
@@ -99,6 +165,7 @@ World::~World()
     _node_free (midi_MidiEvent);
     _node_free (work_schedule);
     _node_free (work_interface);
+    _node_free (options_options);
     _node_free (ui_CocoaUI);
     _node_free (ui_WindowsUI);
     _node_free (ui_GtkUI);
@@ -213,6 +280,7 @@ bool World::isFeatureSupported (const String& featureURI) const
        featureURI == LV2_STATE__loadDefaultState)
       return true;
 
+   JUCE_LV2_LOG("warning: feature " + featureURI + " not supported.");
    return false;
 }
 

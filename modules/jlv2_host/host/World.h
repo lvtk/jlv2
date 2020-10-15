@@ -53,6 +53,7 @@ public:
     const LilvNode*   midi_MidiEvent;
     const LilvNode*   work_schedule;
     const LilvNode*   work_interface;
+    const LilvNode*   options_options;
     const LilvNode*   ui_CocoaUI;
     const LilvNode*   ui_WindowsUI;
     const LilvNode*   ui_X11UI;
@@ -135,8 +136,8 @@ public:
     String unmap (uint32 urid) { return symbolMap.unmap (urid); }
 
 private:
-    LilvWorld* world;
-    SuilHost* suil;
+    LilvWorld* world = nullptr;
+    SuilHost* suil = nullptr;
     SymbolMap symbolMap;
     LV2FeatureArray features;
 

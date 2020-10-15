@@ -21,16 +21,10 @@
 
 namespace jlv2 {
 
-#if EL_ENABLE_CXX11
-/** A function type for mapping uris */
-typedef std::function<LV2_URID(const char*)> URIMapFunction;
-/** A function type for unmapping urids */
-typedef std::function<const char*(LV2_URID)> URIUnmapFunction;
-#endif
-
 /** Maintains a map of Strings/Symbols to integers
     This class also implements LV2 URID Map/Unmap features and is fully
-    compatible with the current LV2 (1.6.0+) specification. */
+    compatible with the current LV2 (1.6.0+) specification.
+ */
 class SymbolMap
 {
 public:
@@ -167,7 +161,6 @@ private:
 
         friend class SymbolMap;
     };
-
 };
 
 }
