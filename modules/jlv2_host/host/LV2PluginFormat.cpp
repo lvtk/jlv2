@@ -205,8 +205,9 @@ LV2AudioParameter* LV2AudioParameter::create (uint32 port, Module& module)
 {
     std::unique_ptr<LV2AudioParameter> param;
     const auto scalePoints = module.getScalePoints (port);
+    const auto enumeration = module.isPortEnumerated (port);
 
-    if (scalePoints.isNotEmpty())
+    if (enumeration && scalePoints.isNotEmpty())
     {
         param.reset (new LV2AudioParameterChoice (port, module, scalePoints));
     }

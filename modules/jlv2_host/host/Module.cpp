@@ -619,6 +619,13 @@ ScalePoints Module::getScalePoints (uint32 index) const
     return sps;
 }
 
+bool Module::isPortEnumerated (uint32 index) const
+{
+    if (const auto* const port = lilv_plugin_get_port_by_index (plugin, index))
+        return lilv_port_has_property (plugin, port, world.lv2_enumeration);
+    return false;
+}
+
 bool Module::isLoaded() const { return instance != nullptr; }
 
 static SupportedUI* createSupportedUI (const LilvPlugin* plugin, const LilvUI* ui)

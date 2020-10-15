@@ -145,6 +145,9 @@ public:
     /** Get the scale points for a port */
     ScalePoints getScalePoints (uint32 port) const;
 
+    /** Returns true if the port should be enumerated */
+    bool isPortEnumerated (uint32 index) const;
+
     /** Get the URI for this plugin */
     String getURI() const;
 

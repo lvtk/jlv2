@@ -49,6 +49,7 @@ public:
     const LilvNode*   lv2_ControlPort;
     const LilvNode*   lv2_EventPort;
     const LilvNode*   lv2_CVPort;
+    const LilvNode*   lv2_enumeration;
     const LilvNode*   midi_MidiEvent;
     const LilvNode*   work_schedule;
     const LilvNode*   work_interface;
