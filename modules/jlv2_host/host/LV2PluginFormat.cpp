@@ -24,9 +24,9 @@ namespace jlv2 {
 #endif
 
 #if LV2_LOGGING
- #define JUCE_LV2_LOG(a) Logger::writeToLog(a);
+ #define JLV2_LOG(a) Logger::writeToLog(a);
 #else
- #define JUCE_LV2_LOG(a)
+ #define JLV2_LOG(a)
 #endif
 
 class LV2AudioParameter : public AudioProcessorParameter
@@ -860,18 +860,28 @@ public:
 
 private:
     bool useExternalData;
+   #if JUCE_LINUX && JLV2_GTKUI
+    bool gtkok = false;
+   #endif
 
     void init()
     {
        #if JUCE_LINUX && JLV2_GTKUI
-        gtk_init (nullptr, nullptr);
+        gtkok = (bool) gtk_init_check (nullptr, nullptr);
+        if (! gtkok)
+        {
+            JLV2_LOG ("could not initialize Gtk 2");
+        }
        #endif
     }
     
     void timerCallback() override
     {
        #if JUCE_LINUX && JLV2_GTKUI
-        gtk_main_iteration_do (false);
+        if (gtkok)
+            gtk_main_iteration_do (false);
+        else
+            stopTimer();
        #else
         stopTimer();
        #endif
@@ -906,7 +916,7 @@ void LV2PluginFormat::findAllTypesForFile (OwnedArray <PluginDescription>& resul
     }
     catch (...)
     {
-        JUCE_LV2_LOG("crashed: " + String(desc->name));
+        JLV2_LOG("crashed: " + String(desc->name));
     }
 }
 
@@ -993,7 +1003,7 @@ void LV2PluginFormat::createPluginInstance (const PluginDescription& desc, doubl
     }
     else
     {
-        JUCE_LV2_LOG ("Failed creating LV2 plugin instance");
+        JLV2_LOG ("Failed creating LV2 plugin instance");
         callback (nullptr, "Failed creating LV2 plugin instance");
     }
 }

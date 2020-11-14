@@ -280,7 +280,7 @@ bool World::isFeatureSupported (const String& featureURI) const
        featureURI == LV2_STATE__loadDefaultState)
       return true;
 
-   JUCE_LV2_LOG("warning: feature " + featureURI + " not supported.");
+   JLV2_LOG ("warning: feature " + featureURI + " not supported.");
    return false;
 }
 
