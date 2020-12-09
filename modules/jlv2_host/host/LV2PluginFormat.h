@@ -49,7 +49,7 @@ protected:
 
 private:
     class Internal;
-    ScopedPointer<Internal> priv;
+    std::unique_ptr<Internal> priv;
 };
 
 }

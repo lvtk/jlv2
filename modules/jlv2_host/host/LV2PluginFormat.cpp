@@ -889,8 +889,15 @@ private:
 };
 
 //=============================================================================
-LV2PluginFormat::LV2PluginFormat() : priv (new Internal()) { }
-LV2PluginFormat::~LV2PluginFormat() { priv = nullptr; }
+LV2PluginFormat::LV2PluginFormat() 
+{ 
+    priv.reset (new Internal());
+}
+
+LV2PluginFormat::~LV2PluginFormat()
+{ 
+    priv.reset();
+}
 
 //=============================================================================
 void LV2PluginFormat::findAllTypesForFile (OwnedArray <PluginDescription>& results,
