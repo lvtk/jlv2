@@ -606,8 +606,10 @@ public:
         {
            #if JUCE_MAC
             native.reset (new NSViewComponent());
+           
            #elif JUCE_LINUX
-            
+            native.reset (new XEmbedComponent (true, true));
+            // native.reset (new XEmbedComponent ((unsigned long) ui->getWidget(), true, true));
            #endif
 
             jassert (native);
@@ -642,6 +644,7 @@ public:
            #if JUCE_MAC
             native->setView (nullptr);
            #elif JUCE_LINUX
+            native->removeClient();
            #endif
             native.reset();
         }
