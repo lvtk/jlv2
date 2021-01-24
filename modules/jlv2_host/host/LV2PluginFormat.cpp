@@ -24,7 +24,7 @@ namespace jlv2 {
 #endif
 
 #if LV2_LOGGING
- #define JLV2_LOG(a) Logger::writeToLog(a);
+ #define JLV2_LOG(a) DBG("[jlv2] " << a);
 #else
  #define JLV2_LOG(a)
 #endif
@@ -601,45 +601,42 @@ public:
           ui (_ui)
     {
         setOpaque (true);
+        jassert (ui && ui->isNative());
 
-        if (ui && ui->isNative())
-        {
-           #if JUCE_MAC
-            native.reset (new NSViewComponent());
-           
-           #elif JUCE_LINUX
-            native.reset (new XEmbedComponent (true, true));
-            // native.reset (new XEmbedComponent ((unsigned long) ui->getWidget(), true, true));
-           #endif
+       #if JUCE_MAC
+        native.reset (new NSViewComponent());
+        
+       #elif JUCE_LINUX
+        native.reset (new XEmbedComponent (true, false));
+        // native.reset (new XEmbedComponent ((unsigned long) ui->getWidget(), true, true));
+       #endif
 
-            jassert (native);
-            if (native != nullptr)
-                addAndMakeVisible (native.get());
+        jassert (native);
+        if (native != nullptr)
+            addAndMakeVisible (native.get());
 
-            setSize (ui->getClientWidth() > 0 ?  ui->getClientWidth() : 240,
-                     ui->getClientHeight() > 0 ? ui->getClientHeight() : 100);
-            startTimerHz (60);
-            setResizable (true, false);
-        }
-        else
-        {
-            widget.setNonOwned ((Component*) ui->getWidget());
-            if (widget)
-            {
-                addAndMakeVisible (widget.get());
-                setSize (widget->getWidth(), widget->getHeight());
-            }
-            else
-            {
-                jassertfalse;
-                setSize (320, 180);
-            }
-        }
+        setSize (ui->getClientWidth() > 0  ? ui->getClientWidth() : 240,
+                 ui->getClientHeight() > 0 ? ui->getClientHeight() : 100);
+        
+        startTimerHz (60);
+        setResizable (ui->haveClientResize(), false);
+
+        ui->onClientResize = [this]() -> int {
+            JLV2_LOG("UI resized itself: " << ui->getClientWidth() << "x" <<
+                                              ui->getClientHeight());
+            native->setSize (ui->getClientWidth(), ui->getClientHeight());
+            setSize (native->getWidth(), native->getHeight());
+            return 0;
+        };
     }
 
     ~LV2EditorNative()
     {
-        if (ui && ui->isNative())
+        plugin.editorBeingDeleted (this);
+        if (! ui)
+            return;
+        
+        if (ui->isNative())
         {
            #if JUCE_MAC
             native->setView (nullptr);
@@ -648,17 +645,8 @@ public:
            #endif
             native.reset();
         }
-        else
-        {
-            removeChildComponent (widget.get());
-            widget.clear();
-        }
         
-        plugin.editorBeingDeleted (this);
-        if (ui)
-        {
-            ui->unload();
-        }
+        ui->unload();
         ui = nullptr;
     }
 
@@ -706,17 +694,13 @@ public:
 
     void resized() override
     {
-        if (native != nullptr)
-            native->setBounds (getLocalBounds());
-
-        if (widget)
-            widget->setBounds (0, 0, widget->getWidth(), widget->getHeight());
+        // if (native != nullptr)
+        //     native->setBounds (getLocalBounds());
     }
 
 private:
     LV2PluginInstance& plugin;
     ModuleUI::Ptr ui = nullptr;
-    OptionalScopedPointer<Component> widget;
     bool nativeViewSetup = false;
    #if JUCE_MAC
     std::unique_ptr<NSViewComponent> native;
