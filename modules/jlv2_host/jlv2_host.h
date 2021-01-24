@@ -55,14 +55,6 @@
  #define JLV2_SUIL_INIT 1
 #endif
 
-/** Config: JLV2_GTKUI
-
-    Enable if you want to support Gtk2 UIs
-*/
-#ifndef JLV2_GTKUI
- #define JLV2_GTKUI 0
-#endif
-
 #if JLV2_PLUGINHOST_LV2
 
 #include <juce_audio_processors/juce_audio_processors.h>

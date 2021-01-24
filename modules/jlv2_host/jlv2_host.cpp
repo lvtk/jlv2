@@ -49,13 +49,9 @@
 #include <lilv/lilv.h>
 #include <suil/suil.h>
 
-#if JUCE_LINUX && JLV2_GTKUI
- #include <gtk/gtk.h>
-#endif
-
 namespace jlv2 {
-class Module;
-class ModuleUI;
+ class Module;
+ class ModuleUI;
 }
 
 #include <unordered_map>

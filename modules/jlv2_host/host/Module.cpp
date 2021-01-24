@@ -694,9 +694,7 @@ bool Module::hasEditor() const
 
         const LilvNode* uitype = nullptr;
 
-       #if JUCE_MAC || JUCE_WINDOWS
         // check if native UI
-        uitype = nullptr;
         if (lilv_ui_is_supported (lui, suil_ui_supported, world.getNativeWidgetType(), &uitype))
         {
             if (uitype != nullptr && lilv_node_is_uri (uitype))
@@ -707,21 +705,6 @@ bool Module::hasEditor() const
                 continue;
             }
         }
-
-       #elif JUCE_LINUX && JLV2_GTKUI
-        // Check for Gtk2
-        uitype = nullptr;
-        if (lilv_ui_is_supported (lui, suil_ui_supported, world.ui_GtkUI, &uitype))
-        {
-            if (uitype != nullptr && lilv_node_is_uri (uitype))
-            {
-                auto* const s = suplist.add (createSupportedUI (plugin, lui));
-                s->container = LV2_UI__GtkUI;
-                s->widget    = String::fromUTF8 (lilv_node_as_uri (uitype));
-                continue;
-            }
-        }
-       #endif
 
         // no UI this far, check show interface
         if (hasShow)
@@ -785,13 +768,8 @@ ModuleUI* Module::createEditor()
     {
         if (u->container == JLV2__NativeUI)
             instance = priv->createModuleUI (*u);
-       #if JUCE_LINUX
-        else if (u->container == LV2_UI__GtkUI)
-            instance = priv->createModuleUI (*u);
-       #endif
         else if (u->useShowInterface)
             instance = priv->createModuleUI (*u);
-
         if (instance != nullptr)
             break;
     }

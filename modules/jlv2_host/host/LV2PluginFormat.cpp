@@ -611,43 +611,14 @@ public:
            #endif
 
             jassert (native);
-            addAndMakeVisible (native.get());
+            if (native != nullptr)
+                addAndMakeVisible (native.get());
 
             setSize (ui->getClientWidth() > 0 ?  ui->getClientWidth() : 240,
                      ui->getClientHeight() > 0 ? ui->getClientHeight() : 100);
             startTimerHz (60);
             setResizable (true, false);
         }
-
-       #if JUCE_LINUX && JLV2_GTKUI
-        else if (ui && ui->hasContainerType (LV2_UI__GtkUI))
-        {
-            ui->onClientResize = [this]() -> int {
-                setSize (jmax (1, ui->getClientWidth()), jmax (1, ui->getClientHeight()));
-                return 0;
-            };
-            ui->instantiate();
-
-            GtkWidget* plug = gtk_plug_new (0);
-            GtkWidget* uiw  = (GtkWidget*) ui->getWidget();
-            
-            GtkAllocation rect;
-            gtk_container_add (GTK_CONTAINER (plug), uiw);
-            gtk_widget_show_all (plug);
-            
-            gtk_widget_get_allocation (uiw, &rect);
-            setSize (jmax (10, rect.width), jmax (10, rect.height));
-            DBG("gtk w = " << rect.width);
-            DBG("gtk h = " << rect.height);
-            
-            native.reset (new XEmbedComponent (
-                (unsigned long) gtk_plug_get_id (GTK_PLUG (plug)),
-                true, true));
-            
-            setResizable (true, true);
-            addAndMakeVisible (native.get());
-        }
-       #endif
         else
         {
             widget.setNonOwned ((Component*) ui->getWidget());
@@ -753,66 +724,7 @@ private:
    #endif
 };
 
-//=============================================================================
-
-#if JUCE_LINUX && JLV2_GTKUI
-class LV2EditorGtk : public LV2AudioProcessorEditor,
-                     public Timer
-{
-public:
-    LV2EditorGtk (LV2PluginInstance* p, ModuleUI::Ptr mui)
-        : LV2AudioProcessorEditor (p, mui)
-    {
-        jassert (ui->hasContainerType (LV2_UI__GtkUI));
-
-        GtkWidget* plug = gtk_plug_new (0);
-        GtkWidget* uiw = (GtkWidget*) ui->getWidget();
-        
-        GtkAllocation rect;
-        gtk_container_add (GTK_CONTAINER (plug), uiw);
-        gtk_widget_show_all (plug);
-        
-        gtk_widget_get_allocation (uiw, &rect);
-        setSize (jmax (10, rect.width), jmax (10, rect.height));
-        DBG("gtk w = " << rect.width);
-        DBG("gtk h = " << rect.height);
-        
-        embed.reset (new XEmbedComponent (
-            (unsigned long) gtk_plug_get_id (GTK_PLUG (plug)),
-            true, true));
-        
-        setResizable (true, true);
-        addAndMakeVisible (embed.get());
-    }
-
-    ~LV2EditorGtk()
-    {
-        cleanup();
-    }
-
-    void timerCallback() override
-    {
-        stopTimer();
-    }
-
-    void paint (Graphics& g) override
-    {
-        g.fillAll (Colours::black);
-    }
-
-    void resized() override
-    {
-        if (embed != nullptr)
-            embed->setBounds (getLocalBounds());
-    }
-
-private:
-    std::unique_ptr<XEmbedComponent> embed;
-};
-#endif
-
-//=============================================================================
-
+//==============================================================================
 AudioProcessorEditor* LV2PluginInstance::createEditor()
 {
     jassert (module->hasEditor());
@@ -824,8 +736,7 @@ AudioProcessorEditor* LV2PluginInstance::createEditor()
         : (AudioProcessorEditor*) new LV2EditorNative (this, ui);
 }
 
-//=============================================================================
-
+//==============================================================================
 class LV2PluginFormat::Internal : private Timer
 {
 public:
@@ -860,31 +771,12 @@ public:
 
 private:
     bool useExternalData;
-   #if JUCE_LINUX && JLV2_GTKUI
-    bool gtkok = false;
-   #endif
 
-    void init()
-    {
-       #if JUCE_LINUX && JLV2_GTKUI
-        gtkok = (bool) gtk_init_check (nullptr, nullptr);
-        if (! gtkok)
-        {
-            JLV2_LOG ("could not initialize Gtk 2");
-        }
-       #endif
-    }
+    void init() {}
     
     void timerCallback() override
     {
-       #if JUCE_LINUX && JLV2_GTKUI
-        if (gtkok)
-            gtk_main_iteration_do (false);
-        else
-            stopTimer();
-       #else
         stopTimer();
-       #endif
     }
 };
 
