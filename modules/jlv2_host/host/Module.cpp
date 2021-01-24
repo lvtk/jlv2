@@ -16,6 +16,9 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#define JLV2_MODULE_EVENT_BUFFER_SIZE   4096
+#define JLV2_MODULE_RING_BUFFER_SIZE    4096
+
 namespace jlv2 {
 
 enum UIQuality {
@@ -199,13 +202,13 @@ void Module::activatePorts()
 
 void Module::init()
 {
-    events.reset (new RingBuffer (4096));
-    evbufsize = jmax (evbufsize, static_cast<uint32> (256));
+    events.reset (new RingBuffer (JLV2_MODULE_RING_BUFFER_SIZE));
+    evbufsize = jmax (evbufsize, static_cast<uint32> (JLV2_MODULE_RING_BUFFER_SIZE));
     evbuf.realloc (evbufsize);
     evbuf.clear (evbufsize);
 
-    notifications.reset (new RingBuffer (4096));
-    ntbufsize = jmax (ntbufsize, static_cast<uint32> (256));
+    notifications.reset (new RingBuffer (JLV2_MODULE_RING_BUFFER_SIZE));
+    ntbufsize = jmax (ntbufsize, static_cast<uint32> (JLV2_MODULE_RING_BUFFER_SIZE));
     ntbuf.realloc (ntbufsize);
     ntbuf.clear (ntbufsize);
 
@@ -257,7 +260,7 @@ void Module::init()
                 dataType = map (LV2_ATOM__Float);
                 break;
             case PortType::Atom:
-                capacity = 4096;
+                capacity = JLV2_MODULE_EVENT_BUFFER_SIZE;
                 dataType = map (LV2_ATOM__Sequence);
                 break;
             case PortType::Midi:    
@@ -265,7 +268,7 @@ void Module::init()
                 dataType = map (LV2_MIDI__MidiEvent);
                 break;
             case PortType::Event:
-                capacity = 4096; 
+                capacity = JLV2_MODULE_EVENT_BUFFER_SIZE; 
                 dataType = map (LV2_EVENT__Event);
                 break;
             case PortType::CV:      
