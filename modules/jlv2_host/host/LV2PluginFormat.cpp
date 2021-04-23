@@ -832,7 +832,8 @@ StringArray LV2PluginFormat::searchPathsForPlugins (const FileSearchPath& paths,
     if (paths.getNumPaths() > 0)
     {
        #if JUCE_WINDOWS
-        setenv ("LV2_PATH", paths.toString().toRawUTF8(), 0);
+        // putenv ("LV2_PATH", paths.toString().toRawUTF8(), 0);
+        // setenv ("LV2_PATH", paths.toString().toRawUTF8(), 0);
        #else
         setenv ("LV2_PATH", paths.toString().replace(";",":").toRawUTF8(), 0);
        #endif
