@@ -290,7 +290,7 @@ public:
             desc.descriptiveName = desc.name;
 
         desc.fileOrIdentifier = module->getURI();
-        desc.uid = desc.fileOrIdentifier.hashCode();
+        desc.uniqueId = desc.fileOrIdentifier.hashCode();
 
 //        desc.lastFileModTime = 0;
         desc.pluginFormatName = "LV2";
@@ -789,7 +789,7 @@ void LV2PluginFormat::findAllTypesForFile (OwnedArray <PluginDescription>& resul
     std::unique_ptr<PluginDescription> desc (new PluginDescription());
     desc->fileOrIdentifier = fileOrIdentifier;
     desc->pluginFormatName = String ("LV2");
-    desc->uid = 0;
+    desc->uniqueId = 0;
 
     try
     {
