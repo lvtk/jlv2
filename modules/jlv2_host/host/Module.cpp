@@ -411,7 +411,8 @@ Result Module::instantiate (double samplerate)
 
     if (const void* data = getExtensionData (LV2_WORKER__interface))
     {
-        jassert (worker != nullptr);
+        if (worker == nullptr)
+            return Result::fail ("Could not get worker feature whereas extension data exists.");
         worker->setSize (2048);
         worker->setInterface (lilv_instance_get_handle (instance),
                               (LV2_Worker_Interface*) data);
