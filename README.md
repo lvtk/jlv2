@@ -1,3 +1,6 @@
+## Project Arvhived.
+JUCE officially now supports LV2 since version 7.0.  Please use it instead.
+
 # LV2 Pugin Hosting for JUCE
 A JUCE module which provides a LV2PluginFormat. Many features are working, but this project should be considered pre alpha.
 
